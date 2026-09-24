@@ -102,6 +102,18 @@ public class GameEngine {
     public boolean finished() { return won || quit || player.health() == 0; }
 
     /**
+     * Checks whether the current encounter has an offered riddle.
+     *
+     * <p>Only an unresolved NPC on the player's current tile can provide an answer target.</p>
+     *
+     * @return true if the current active NPC has offered its riddle
+     */
+    public boolean canAnswerRiddle() {
+        Npc npc = currentNpc();
+        return npc != null && npc.riddleOffered();
+    }
+
+    /**
      * Executes one command against the current game session.
      *
      * <p>Rejects further actions after the game has ended. Separates the first command token from the remaining argument, dispatches movement, encounters and item use, and returns feedback. Help, look and inventory are read-only; quit records the end of the session. No terminal input or output is performed here.</p>
