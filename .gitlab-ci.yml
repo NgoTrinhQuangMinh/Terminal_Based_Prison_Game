@@ -1,0 +1,14 @@
+stages:
+  - build
+  - test
+
+gradle-build:
+  stage: build
+  tags:
+    - comp2120
+  script:
+    - ./gradlew assemble
+  artifacts:
+    paths:
+      - build/
+
