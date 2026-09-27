@@ -1,0 +1,27 @@
+image: eclipse-temurin:17-jdk
+
+stages:
+  - build
+  - test
+
+gradle-build:
+  stage: build
+  tags:
+    - comp2120
+  script:
+    - ./gradlew assemble
+  artifacts:
+    paths:
+      - build/
+
+gradle-test:
+  stage: test
+  tags:
+    - comp2120
+  script:
+    - ./gradlew test
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - build/test-results/test/TEST-*.xml
