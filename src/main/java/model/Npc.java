@@ -87,7 +87,24 @@ public class Npc {
      */
     public boolean riddleOffered() { return riddleOffered; }
 
+    /**
+     * Makes the NPC's riddle available for answering.
+     *
+     * <p>Sets the offered flag and returns the same configured question on subsequent calls. It does not damage or resolve the NPC.</p>
+     *
+     * @return the configured riddle text
+     */
+    public String offerRiddle() { riddleOffered = true; return riddle; }
 
+    /**
+     * Checks an answer against this NPC's offered riddle.
+     *
+     * <p>Returns false until the question has been offered. Once offered, comparison ignores case and surrounding whitespace. A match does not itself resolve the NPC or award items.</p>
+     *
+     * @param attempt answer text to compare; must be non-null when the riddle has been offered
+     * @return true if the riddle was offered and the normalised answer matches
+     */
+    public boolean accepts(String attempt) { return riddleOffered && answer.equalsIgnoreCase(attempt.trim()); }
 
     /**
      * Applies player damage to this NPC.
