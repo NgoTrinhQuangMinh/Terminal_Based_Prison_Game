@@ -89,5 +89,22 @@ public class Npc {
 
 
 
+    /**
+     * Applies player damage to this NPC.
+     *
+     * <p>Negative damage has no effect and health cannot drop below zero. Reaching zero resolves the encounter; this model method does not award inventory items.</p>
+     *
+     * @param damage requested damage amount; negative values are treated as zero
+     */
+    public void hit(int damage) {
+        health = Math.max(0, health - Math.max(0, damage));
+        if (health == 0) { resolve(); }
+    }
 
+    /**
+     * Marks this encounter as completed.
+     *
+     * <p>The operation is idempotent and does not change health, riddle text or configured rewards. The engine excludes resolved NPCs from later interactions.</p>
+     */
+    public void resolve() { resolved = true; }
 }
