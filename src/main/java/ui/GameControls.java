@@ -11,19 +11,53 @@ public class GameControls {
     private boolean inventoryVisible;
     private String message = "Find the key. Fight an NPC or solve its riddle for drops.";
 
-    /** @param game game receiving commands */
+    /**
+     * Creates an input controller for a game session.
+     *
+     * <p>Retains the engine and begins with normal controls, hidden inventory and an empty answer buffer. Construction does not execute a command.</p>
+     *
+     * @param game engine that receives translated player commands
+     */
     public GameControls(GameEngine game) { this.game = game; }
-    /** @return latest game feedback */
+    /**
+     * Returns the latest feedback shown by the controller.
+     *
+     * <p>The message changes after handled commands and answer cancellation; reading it does not execute any action.</p>
+     *
+     * @return the current feedback message
+     */
     public String message() { return message; }
-    /** @return current answer text */
+    /**
+     * Returns the answer text currently being edited.
+     *
+     * <p>Creates a string snapshot of the buffer without submitting or clearing it.</p>
+     *
+     * @return the current answer text, possibly empty
+     */
     public String answer() { return answer.toString(); }
-    /** @return whether text is being entered */
+    /**
+     * Reports whether the controller is accepting riddle text.
+     *
+     * <p>In this mode ordinary action letters are entered as answer characters rather than dispatched as gameplay commands.</p>
+     *
+     * @return true when riddle answer entry is active
+     */
     public boolean answering() { return answering; }
-    /** @return whether to show inventory */
+    /**
+     * Reports whether inventory should be displayed.
+     *
+     * <p>This is presentation state toggled by the inventory shortcut and does not change the items held.</p>
+     *
+     * @return true when the inventory display is enabled
+     */
     public boolean inventoryVisible() { return inventoryVisible; }
 
-    /** Handles a character or named arrow key; typing never triggers game actions.
-     * @param key character, or UP/DOWN/LEFT/RIGHT
+    /**
+     * Processes one character or named control key.
+     *
+     * <p>Ignores input after the game ends. Quit control characters work in either input mode; other keys are routed to answer editing while a riddle is active. In normal mode, translates movement, encounter and item shortcuts, toggles inventory visibility, and enters answer mode after a successful talk action.</p>
+     *
+     * @param key non-null input character, control character, or named arrow key such as UP
      */
     public void handle(String key) {
         if (game.finished()) { return; }
@@ -58,8 +92,12 @@ public class GameControls {
         }
     }
 
-    /** Edits or submits an answer while movement controls are suspended.
-     * @param key input character or named key
+    /**
+     * Edits, submits or cancels the active riddle answer.
+     *
+     * <p>Escape clears the buffer and returns to normal controls. Enter submits non-blank text and keeps answer mode active only while a riddle remains available. Backspace removes one character; printable single characters append up to the 80-character limit. Movement and action commands are not dispatched by typing.</p>
+     *
+     * @param key non-null character or named key received during answer entry
      */
     private void typeAnswer(String key) {
         if (key.equals("\u001b")) {

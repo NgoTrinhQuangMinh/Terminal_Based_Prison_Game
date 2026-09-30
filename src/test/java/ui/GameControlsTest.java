@@ -9,7 +9,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Verifies that immediate controls and answer typing stay separate. */
 class GameControlsTest {
-    /** Movement needs no Enter, and arrows work like WASD. */
+    /**
+     * Verifies immediate movement shortcuts and inventory visibility.
+     *
+     * <p>Checks that named arrows and letter keys move without Enter and that repeated inventory shortcuts toggle the presentation state.</p>
+     */
     @Test
     void immediateMovementAndInventory() {
         GameEngine game = new GameEngine(MazeLoader.loadDefault());
@@ -24,7 +28,11 @@ class GameControlsTest {
         assertFalse(controls.inventoryVisible());
     }
 
-    /** Typing, deleting, and submitting answers cannot trigger action keys. */
+    /**
+     * Verifies that riddle text editing is isolated from action controls.
+     *
+     * <p>Types movement, fight and quit letters while answering, checks unchanged position and health, then corrects and submits an answer to collect the key.</p>
+     */
     @Test
     void riddleTypingDoesNotMoveOrQuit() {
         GameEngine game = new GameEngine(MazeLoader.loadDefault());
@@ -47,7 +55,11 @@ class GameControlsTest {
         assertTrue(game.player().has(Player.KEY));
     }
 
-    /** Cancellation returns to combat; item shortcuts apply their effects. */
+    /**
+     * Verifies cancellation and item shortcuts across an NPC encounter.
+     *
+     * <p>Confirms talking on an empty tile does not enter answer mode, cancellation restores combat controls, healing and equipment apply their effects, and quitting ends play.</p>
+     */
     @Test
     void cancelFightHealAndEquip() {
         GameEngine game = new GameEngine(MazeLoader.loadDefault());

@@ -12,8 +12,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Exercises the JLine loop through a virtual terminal. */
 class ConsoleUITest {
-    /** Reads actual escape sequences and riddle text, then restores terminal settings.
-     * @throws Exception if terminal setup fails
+    /**
+     * Verifies the full key loop through a virtual terminal.
+     *
+     * <p>Feeds real arrow escape sequences, riddle text and quit input. Asserts key collection, session completion, emitted title text and restoration of terminal local flags.</p>
+     *
+     * @throws Exception if virtual terminal setup, execution or cleanup fails
      */
     @Test
     void keyLoopSolvesRiddleAndRestoresTerminal() throws Exception {

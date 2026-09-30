@@ -19,13 +19,23 @@ public class ConsoleUI {
     private final GameEngine game;
     private final GameControls controls;
 
-    /** @param game game to display */
+    /**
+     * Connects a terminal UI to an existing game session.
+     *
+     * <p>Retains the supplied engine and creates a GameControls instance for input state. Construction does not open a terminal or start reading keys.</p>
+     *
+     * @param game game session whose commands, status and display are used by this UI
+     */
     public ConsoleUI(GameEngine game) {
         this.game = game;
         controls = new GameControls(game);
     }
 
-    /** Opens a native terminal and restores its settings when play ends. */
+    /**
+     * Opens a native terminal and runs the immediate-key interface.
+     *
+     * <p>Creates and closes the terminal with try-with-resources, delegates the key loop, and reports terminal setup or state failures to standard error with launch guidance.</p>
+     */
     public void run() {
         try (Terminal terminal = TerminalBuilder.builder().system(true).dumb(false).build()) {
             run(terminal);
@@ -35,8 +45,12 @@ public class ConsoleUI {
         }
     }
 
-    /** Runs the key loop, restoring raw mode and the normal screen even on failure.
-     * @param terminal connected terminal
+    /**
+     * Runs the immediate-key loop using an existing terminal.
+     *
+     * <p>Enters raw input and the alternate screen, draws frames, and dispatches keys while the terminal is large enough. Quit shortcuts remain available when undersized. A finally block restores terminal attributes, keypad mode, cursor visibility and the normal screen; the supplied terminal is not closed here.</p>
+     *
+     * @param terminal open terminal used for input, sizing and output
      */
     void run(Terminal terminal) {
         Attributes original = terminal.enterRawMode();
@@ -72,9 +86,13 @@ public class ConsoleUI {
         terminal.flush();
     }
 
-    /** Creates character and arrow bindings, including common arrow encodings.
-     * @param terminal connected terminal
-     * @return key bindings
+    /**
+     * Builds the key bindings used by the terminal input loop.
+     *
+     * <p>Maps ordinary ASCII and Unicode input to text handling and registers named arrow actions with terminal-specific and common escape sequences. Uses a short ambiguity timeout to distinguish escape-key input.</p>
+     *
+     * @param terminal terminal whose capabilities provide native arrow sequences
+     * @return a new key map for text input and arrow actions
      */
     private KeyMap<String> keys(Terminal terminal) {
         KeyMap<String> keys = new KeyMap<>();
@@ -89,12 +107,16 @@ public class ConsoleUI {
         return keys;
     }
 
-    /** Registers portable and terminal-specific arrow sequences.
-     * @param keys key map
-     * @param terminal terminal
-     * @param action direction name
-     * @param capability terminal key capability
-     * @param sequences fallback sequences
+    /**
+     * Registers fallback and terminal-native sequences for an arrow action.
+     *
+     * <p>Mutates the supplied key map. Fallback sequences are always registered; the capability sequence is added only when the terminal supplies one.</p>
+     *
+     * @param keys key map to update
+     * @param terminal terminal providing the native capability sequence
+     * @param action logical action name returned for a matching sequence
+     * @param capability terminal capability identifying the arrow key
+     * @param sequences fallback escape sequences accepted for the same action
      */
     private void bindArrow(KeyMap<String> keys, Terminal terminal, String action,
                            Capability capability, String... sequences) {
@@ -103,9 +125,13 @@ public class ConsoleUI {
         if (sequence != null) { keys.bind(action, sequence); }
     }
 
-    /** Draws a bounded frame; JLine updates changed cells instead of scrolling.
-     * @param terminal terminal to measure
-     * @param display screen updater
+    /**
+     * Draws a bounded frame for the current terminal size.
+     *
+     * <p>Shows a resize prompt for terminals smaller than 70 columns by 24 rows. Otherwise displays the map, controls, inventory visibility, feedback and answer input. Clips output to the available rows and columns, updates the display and flushes the terminal without changing gameplay state.</p>
+     *
+     * @param terminal terminal providing dimensions and output
+     * @param display display updater that applies the new frame
      */
     private void draw(Terminal terminal, Display display) {
         int width = Math.max(1, terminal.getWidth());
@@ -147,11 +173,15 @@ public class ConsoleUI {
         terminal.flush();
     }
 
-    /** Wraps feedback into a small reserved area.
-     * @param lines frame lines
-     * @param text feedback text
-     * @param width line width
-     * @param count maximum lines
+    /**
+     * Appends a limited number of wrapped feedback lines.
+     *
+     * <p>Replaces embedded newlines with spaces and prefers breaking at word boundaries. When content exceeds the line limit, the final line is shortened with an ellipsis. The destination list is modified.</p>
+     *
+     * @param lines destination list receiving attributed text lines
+     * @param text non-null feedback to wrap
+     * @param width maximum line width; callers provide at least three columns for truncation
+     * @param count maximum number of lines to append
      */
     private void addWrapped(List<AttributedString> lines, String text, int width, int count) {
         String remaining = text.replace('\n', ' ');
