@@ -111,6 +111,31 @@ class InventoryTest {
     }
 
     /**
+     * Verifies that removing an item takes away only one matching entry.
+     */
+    @Test
+    void removeTakesAwayOneMatchingItem() {
+        Inventory inventory = new Inventory();
+        inventory.add(Inventory.HERB);
+        inventory.add(Inventory.HERB);
+
+        assertTrue(inventory.remove(Inventory.HERB));
+        assertEquals(1, inventory.count(Inventory.HERB));
+    }
+
+    /**
+     * Verifies that removing an item that is not held changes nothing.
+     */
+    @Test
+    void removeMissingItemReturnsFalse() {
+        Inventory inventory = new Inventory();
+        inventory.add(Inventory.KEY);
+
+        assertFalse(inventory.remove(Inventory.HERB));
+        assertEquals(List.of(Inventory.KEY), inventory.items());
+    }
+
+    /**
      * Verifies that null and blank item names are rejected.
      */
     @Test
