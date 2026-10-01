@@ -1,13 +1,16 @@
 package model;
 
 /**
- * Represents the player and their current location in the maze.
+ * Represents the player, their current location in the maze and the
+ * items they are carrying.
  *
  * @author Pat Kupkee
+ * @author Xinran Tian
  */
 public class Player {
 
     private Position position;
+    private final Inventory inventory = new Inventory();
 
     /**
      * Creates a player at the supplied starting position.
@@ -38,5 +41,14 @@ public class Player {
      */
     public void moveTo(Position position) {
         this.position = position;
+    }
+
+    /**
+     * Returns the inventory holding the items the player is carrying.
+     *
+     * @return the player's inventory
+     */
+    public Inventory inventory() {
+        return inventory;
     }
 }
