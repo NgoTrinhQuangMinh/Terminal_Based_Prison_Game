@@ -3,6 +3,7 @@ package model;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests the player's current location state.
@@ -48,5 +49,27 @@ class PlayerTest {
         player.moveTo(destination);
 
         assertEquals(destination, player.position());
+    }
+
+    /**
+     * Verifies that a new player starts with an empty inventory.
+     */
+    @Test
+    void newPlayerHasEmptyInventory() {
+        Player player = new Player(new Position(0, 0));
+
+        assertTrue(player.inventory().isEmpty());
+    }
+
+    /**
+     * Verifies that items added to the player's inventory are kept.
+     */
+    @Test
+    void playerInventoryKeepsAddedItems() {
+        Player player = new Player(new Position(0, 0));
+
+        player.inventory().add(Inventory.KEY);
+
+        assertTrue(player.inventory().has(Inventory.KEY));
     }
 }
