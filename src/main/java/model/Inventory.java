@@ -49,6 +49,18 @@ public class Inventory {
     }
 
     /**
+     * Removes one of the given item from the inventory.
+     *
+     * <p>If several matching items are held, only one is removed.</p>
+     *
+     * @param item the name of the item to remove
+     * @return true if an item was removed, false if none was held
+     */
+    public boolean remove(String item) {
+        return items.remove(item);
+    }
+
+    /**
      * Counts how many of the given item are held.
      *
      * @param item the name of the item to count
