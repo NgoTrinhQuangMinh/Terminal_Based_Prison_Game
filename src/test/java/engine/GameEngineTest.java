@@ -1,5 +1,6 @@
 package engine;
 
+import command.Command;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -186,5 +187,125 @@ class GameEngineTest {
                 () -> new GameEngine(null));
         assertThrows(IllegalArgumentException.class,
                 () -> new GameEngine(newMaze(), null));
+    }
+
+    /**
+     * Verifies that the player can move right into an accessible location.
+     */
+    @Test
+    void playerMovesRight() {
+        GameEngine engine = new GameEngine(newMaze());
+
+        String feedback = engine.move(Command.RIGHT);
+
+        assertEquals(new Position(2, 1), engine.player().position());
+        assertEquals("Movement successful.", feedback);
+    }
+
+    /**
+     * Verifies that the player can move backward into an accessible location.
+     */
+    @Test
+    void playerMovesBackward() {
+        GameEngine engine = new GameEngine(newMaze());
+
+        String feedback = engine.move(Command.BACKWARD);
+
+        assertEquals(new Position(1, 2), engine.player().position());
+        assertEquals("Movement successful.", feedback);
+    }
+
+    /**
+     * Verifies that the player can move left after first moving right.
+     */
+    @Test
+    void playerMovesLeft() {
+        GameEngine engine = new GameEngine(newMaze());
+
+        engine.move(Command.RIGHT);
+        String feedback = engine.move(Command.LEFT);
+
+        assertEquals(new Position(1, 1), engine.player().position());
+        assertEquals("Movement successful.", feedback);
+    }
+
+    /**
+     * Verifies that the player can move forward after first moving backward.
+     */
+    @Test
+    void playerMovesForward() {
+        GameEngine engine = new GameEngine(newMaze());
+
+        engine.move(Command.BACKWARD);
+        String feedback = engine.move(Command.FORWARD);
+
+        assertEquals(new Position(1, 1), engine.player().position());
+        assertEquals("Movement successful.", feedback);
+    }
+
+    /**
+     * Verifies that movement into a wall is prevented.
+     */
+    @Test
+    void movementIntoWallIsBlocked() {
+        GameEngine engine = new GameEngine(newMaze());
+
+        Position startingPosition = engine.player().position();
+
+        String feedback = engine.move(Command.LEFT);
+
+        assertEquals(startingPosition, engine.player().position());
+        assertEquals("Movement blocked.", feedback);
+    }
+
+    /**
+     * Verifies that movement outside the playable area is prevented.
+     */
+    @Test
+    void movementOutsidePlayableAreaIsBlocked() {
+        Maze maze = new Maze(List.of(
+                "P..",
+                "...",
+                "..X"
+        ));
+
+        GameEngine engine = new GameEngine(maze);
+
+        Position startingPosition = engine.player().position();
+
+        String feedback = engine.move(Command.LEFT);
+
+        assertEquals(startingPosition, engine.player().position());
+        assertEquals("Movement blocked.", feedback);
+    }
+
+    /**
+     * Verifies that an unsupported command does not move the player.
+     */
+    @Test
+    void unknownCommandDoesNotMovePlayer() {
+        GameEngine engine = new GameEngine(newMaze());
+
+        Position startingPosition = engine.player().position();
+
+        String feedback = engine.move(Command.UNKNOWN);
+
+        assertEquals(startingPosition, engine.player().position());
+        assertEquals("Unknown movement command.", feedback);
+    }
+
+    /**
+     * Verifies that a null command does not move the player.
+     */
+    @Test
+    void nullCommandDoesNotMovePlayer() {
+        GameEngine engine = new GameEngine(newMaze());
+
+        Position startingPosition = engine.player().position();
+
+        String feedback = engine.move(null);
+
+        assertEquals(startingPosition, engine.player().position());
+        assertEquals("Unknown movement command.", feedback);
     }
 }
