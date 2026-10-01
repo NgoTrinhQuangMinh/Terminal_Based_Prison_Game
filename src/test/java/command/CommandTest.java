@@ -5,9 +5,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Tests parsing of player movement commands.
+ * Tests parsing of player movement and inventory commands.
  *
  * @author Pat Kupkee
+ * @author Xinran Tian
  */
 class CommandTest {
 
@@ -107,8 +108,29 @@ class CommandTest {
     void unsupportedInputReturnsUnknown() {
         assertEquals(Command.UNKNOWN, Command.parse("fight"));
         assertEquals(Command.UNKNOWN, Command.parse("talk"));
-        assertEquals(Command.UNKNOWN, Command.parse("inventory"));
         assertEquals(Command.UNKNOWN, Command.parse("jump"));
         assertEquals(Command.UNKNOWN, Command.parse("hello"));
+    }
+
+    /**
+     * Verifies that inventory and its short alias are recognised.
+     */
+    @Test
+    void parsesInventoryCommand() {
+        assertEquals(Command.INVENTORY, Command.parse("inventory"));
+        assertEquals(Command.INVENTORY, Command.parse("i"));
+        assertEquals(Command.INVENTORY, Command.parse("  INVENTORY "));
+    }
+
+    /**
+     * Verifies that use and its equip alias are recognised, with or
+     * without an item name after the command.
+     */
+    @Test
+    void parsesUseCommand() {
+        assertEquals(Command.USE, Command.parse("use"));
+        assertEquals(Command.USE, Command.parse("use herb"));
+        assertEquals(Command.USE, Command.parse("equip weapon"));
+        assertEquals(Command.USE, Command.parse("USE Healing herb"));
     }
 }
