@@ -205,4 +205,18 @@ public class GameEngine {
         npc.drops().forEach(player.inventory()::add);
         return "Drops collected: " + String.join(", ", npc.drops()) + ".";
     }
+
+    /**
+     * Offers the current active NPC's riddle.
+     *
+     * <p>Marks the riddle as offered and returns its text with answer instructions. Talking does not damage either participant or award items.</p>
+     *
+     * @author Minh
+     * @return the riddle and instructions, or feedback when no active NPC is present
+     */
+    private String talk() {
+        Npc npc = currentNpc();
+        if (npc == null) { return "There is no NPC here to talk to."; }
+        return "NPC: " + npc.offerRiddle() + "\nType answer <your answer>.";
+    }
 }
