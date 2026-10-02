@@ -151,7 +151,8 @@ public class GameEngine {
      * <p>The destination is calculated from the player's current position.
      * The maze determines whether the destination is blocked. If the
      * destination is the exit, the player must have the required key before
-     * entering it.</p>
+     * entering it. After a successful movement, an unresolved NPC at the
+     * destination is reported.</p>
      *
      * @param dx horizontal movement offset
      * @param dy vertical movement offset
@@ -175,6 +176,14 @@ public class GameEngine {
         }
 
         player.moveTo(destination);
+
+        Npc npc = currentNpc();
+        if (npc != null) {
+            return "NPC encountered. Health: " + npc.health()
+                    + ", Attqack: " + npc.attack()
+                    + ". Choose fight or talk.";
+        }
+
         return "Movement successful.";
     }
 
