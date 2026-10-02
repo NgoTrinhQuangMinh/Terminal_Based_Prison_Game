@@ -308,4 +308,38 @@ class GameEngineTest {
         assertEquals(startingPosition, engine.player().position());
         assertEquals("Unknown movement command.", feedback);
     }
+
+    /**
+     * Verifies that the player cannot enter the exit without the key.
+     */
+    @Test
+    void exitIsLockedWithoutKey() {
+        GameEngine engine = new GameEngine(newMaze());
+
+        engine.move(Command.RIGHT);
+        String feedback = engine.move(Command.RIGHT);
+
+        assertEquals(new Position(2, 1), engine.player().position());
+        assertFalse(engine.won());
+        assertEquals("The exit is locked. You need the key.", feedback);
+    }
+
+    /**
+     * Verifies that the player can enter the exit and win the game
+     * when they have the required key.
+     */
+    @Test
+    void playerCanEscapeWithKey() {
+        GameEngine engine = new GameEngine(newMaze());
+
+        engine.player().inventory().add(Inventory.KEY);
+
+        engine.move(Command.RIGHT);
+        String feedback = engine.move(Command.RIGHT);
+
+        assertEquals(new Position(3, 1), engine.player().position());
+        assertTrue(engine.won());
+        assertTrue(engine.finished());
+        assertEquals("You escaped!", feedback);
+    }
 }

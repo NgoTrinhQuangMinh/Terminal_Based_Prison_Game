@@ -7,6 +7,7 @@ import model.Maze;
 import model.Npc;
 import model.Player;
 import model.Position;
+import model.Inventory;
 
 /**
  * Holds the state of one game session and reports whether it has ended.
@@ -147,8 +148,9 @@ public class GameEngine {
      * Attempts to move the player by the supplied coordinate offset.
      *
      * <p>The destination is calculated from the player's current position.
-     * The maze determines whether the destination is blocked. If it is
-     * blocked, the player's current position is unchanged.</p>
+     * The maze determines whether the destination is blocked. If the
+     * destination is the exit, the player must have the required key before
+     * entering it.</p>
      *
      * @param dx horizontal movement offset
      * @param dy vertical movement offset
@@ -159,6 +161,16 @@ public class GameEngine {
 
         if (maze.isWall(destination)) {
             return "Movement blocked.";
+        }
+
+        if (maze.at(destination) == 'X') {
+            if (!player.inventory().has(Inventory.KEY)) {
+                return "The exit is locked. You need the key.";
+            }
+
+            player.moveTo(destination);
+            markWon();
+            return "You escaped!";
         }
 
         player.moveTo(destination);
