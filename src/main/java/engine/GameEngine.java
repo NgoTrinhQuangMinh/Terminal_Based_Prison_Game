@@ -2,9 +2,11 @@ package engine;
 
 import java.util.List;
 
+import command.Command;
 import model.Maze;
 import model.Npc;
 import model.Player;
+import model.Position;
 
 /**
  * Holds the state of one game session and reports whether it has ended.
@@ -114,5 +116,52 @@ public class GameEngine {
      */
     public boolean finished() {
         return won || quit || player.health() == 0;
+    }
+
+    /**
+     * Attempts to move the player in the direction represented by a command.
+     *
+     * <p>The command is converted into a coordinate offset and the
+     * destination is checked by the maze before the player's position
+     * is updated. Invalid or unsupported commands do not change the
+     * player's position.</p>
+     *
+     * @param command movement command to execute; may be null
+     * @return feedback describing the result of the movement attempt
+     */
+    public String move(Command command) {
+        if (command == null || command == Command.UNKNOWN) {
+            return "Unknown movement command.";
+        }
+
+        return switch (command) {
+            case LEFT -> moveBy(-1, 0);
+            case RIGHT -> moveBy(1, 0);
+            case FORWARD -> moveBy(0, -1);
+            case BACKWARD -> moveBy(0, 1);
+            default -> "Unknown movement command.";
+        };
+    }
+
+    /**
+     * Attempts to move the player by the supplied coordinate offset.
+     *
+     * <p>The destination is calculated from the player's current position.
+     * The maze determines whether the destination is blocked. If it is
+     * blocked, the player's current position is unchanged.</p>
+     *
+     * @param dx horizontal movement offset
+     * @param dy vertical movement offset
+     * @return feedback describing the result of the movement attempt
+     */
+    private String moveBy(int dx, int dy) {
+        Position destination = player.position().move(dx, dy);
+
+        if (maze.isWall(destination)) {
+            return "Movement blocked.";
+        }
+
+        player.moveTo(destination);
+        return "Movement successful.";
     }
 }
