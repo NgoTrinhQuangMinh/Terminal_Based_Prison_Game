@@ -10,7 +10,11 @@ import model.Maze;
 import model.Npc;
 import model.Inventory;
 
-/** Loads NPC stats, riddles, answers and drops from a properties file. */
+/**
+ * Loads NPC stats, riddles, answers and drops from a properties file.
+ *
+ * @author Minh
+ */
 public final class NpcLoader {
     /**
      * Prevents construction of the NPC-loading utility.

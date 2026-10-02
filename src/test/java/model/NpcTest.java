@@ -7,7 +7,11 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Tests the NPC model's validation, encounter lifecycle, rewards and riddle contract. */
+/**
+ * Tests the NPC model's validation, encounter lifecycle, rewards and riddle contract.
+ *
+ * @author Minh
+ */
 class NpcTest {
     /**
      * Creates a fresh encounter for tests that do not vary constructor arguments.
