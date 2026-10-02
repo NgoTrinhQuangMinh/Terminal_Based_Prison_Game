@@ -20,6 +20,8 @@ class ActiveNpcSelectionTest {
     /**
      * Creates a session with two marker locations and the supplied encounter objects.
      *
+     *
+     * @author Minh
      * @param npcs encounter objects retained by the session
      * @return a new session starting away from both NPC markers
      */
@@ -30,6 +32,8 @@ class ActiveNpcSelectionTest {
     /**
      * Creates an unresolved encounter at a specified position on the fixture map.
      *
+     *
+     * @author Minh
      * @param x column occupied by the encounter
      * @return a fresh NPC with six health and a key reward
      */
@@ -41,6 +45,8 @@ class ActiveNpcSelectionTest {
     /**
      * Calls the source implementation's private lookup without widening its production visibility.
      *
+     *
+     * @author Minh
      * @param engine session whose current encounter is queried
      * @return the selected live NPC, or null when no unresolved encounter occupies the tile
      * @throws AssertionError if the lookup cannot be invoked
@@ -55,7 +61,11 @@ class ActiveNpcSelectionTest {
         }
     }
 
-    /** Verifies an empty encounter collection has no active target, even on a numbered map tile. */
+    /**
+     * Verifies an empty encounter collection has no active target, even on a numbered map tile.
+     *
+     * @author Minh
+     */
     @Test
     void emptySessionHasNoActiveNpc() {
         GameEngine engine = session();
@@ -63,7 +73,11 @@ class ActiveNpcSelectionTest {
         assertNull(currentNpc(engine));
     }
 
-    /** Verifies NPCs on other tiles cannot be selected and selection follows the player's location. */
+    /**
+     * Verifies NPCs on other tiles cannot be selected and selection follows the player's location.
+     *
+     * @author Minh
+     */
     @Test
     void selectsOnlyNpcAtCurrentPosition() {
         Npc first = npcAt(1);
@@ -78,7 +92,11 @@ class ActiveNpcSelectionTest {
         assertNull(currentNpc(engine));
     }
 
-    /** Verifies explicit encounter completion immediately removes the NPC from active selection. */
+    /**
+     * Verifies explicit encounter completion immediately removes the NPC from active selection.
+     *
+     * @author Minh
+     */
     @Test
     void resolvedNpcIsExcluded() {
         Npc npc = npcAt(1);
@@ -90,7 +108,11 @@ class ActiveNpcSelectionTest {
         assertSame(npc, engine.npcs().get(0));
     }
 
-    /** Verifies a defeated NPC remains excluded after the player leaves and returns. */
+    /**
+     * Verifies a defeated NPC remains excluded after the player leaves and returns.
+     *
+     * @author Minh
+     */
     @Test
     void defeatedNpcStaysInactiveOnReturn() {
         Npc npc = npcAt(1);
@@ -105,7 +127,11 @@ class ActiveNpcSelectionTest {
         assertTrue(npc.resolved());
     }
 
-    /** Verifies returning to an active encounter preserves its identity, health and offered riddle. */
+    /**
+     * Verifies returning to an active encounter preserves its identity, health and offered riddle.
+     *
+     * @author Minh
+     */
     @Test
     void leavingAndReturningPreservesEncounterProgress() {
         Npc npc = npcAt(1);
@@ -124,7 +150,11 @@ class ActiveNpcSelectionTest {
         assertFalse(currentNpc(engine).resolved());
     }
 
-    /** Verifies progress and completion in one encounter do not alter another encounter's state. */
+    /**
+     * Verifies progress and completion in one encounter do not alter another encounter's state.
+     *
+     * @author Minh
+     */
     @Test
     void encountersMaintainIndependentState() {
         Npc first = npcAt(1);
@@ -144,7 +174,11 @@ class ActiveNpcSelectionTest {
         assertTrue(first.resolved());
     }
 
-    /** Verifies repeated lookups are read-only and retain the session's actual NPC object. */
+    /**
+     * Verifies repeated lookups are read-only and retain the session's actual NPC object.
+     *
+     * @author Minh
+     */
     @Test
     void lookupDoesNotMutateSessionOrEncounter() {
         Npc npc = npcAt(1);

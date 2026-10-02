@@ -20,6 +20,8 @@ public final class NpcLoader {
      * Prevents construction of the NPC-loading utility.
      *
      * <p>NPC creation is accessed through the static configuration-loading method.</p>
+     *
+     * @author Minh
      */
     private NpcLoader() { }
 
@@ -28,6 +30,8 @@ public final class NpcLoader {
      *
      * <p>Reads /npcs.properties as UTF-8, uses npc.&lt;marker&gt; properties, and maps herb, weapon and key reward tokens to stored item names. Repeated drops are retained. Each call creates new encounter state and closes its resource reader.</p>
      *
+     *
+     * @author Minh
      * @param maze validated maze supplying the NPC markers and their coordinates
      * @return NPCs in the maze marker scan order
      * @throws IllegalStateException if the configuration resource is missing or cannot be read
@@ -68,6 +72,8 @@ public final class NpcLoader {
      *
      * <p>Trims surrounding whitespace after checking that the property is present and contains non-whitespace text. The supplied Properties object is not modified.</p>
      *
+     *
+     * @author Minh
      * @param config properties loaded from the NPC configuration
      * @param key required property name
      * @return the trimmed property value

@@ -171,6 +171,8 @@ public class GameEngine {
      *
      * <p>Searches the existing session collection and ignores resolved NPCs. Returning the same stored object preserves encounter progress when the player leaves and returns.</p>
      *
+     *
+     * @author Minh
      * @return the first unresolved NPC at the player position, or null if none exists
      */
     private Npc currentNpc() {
