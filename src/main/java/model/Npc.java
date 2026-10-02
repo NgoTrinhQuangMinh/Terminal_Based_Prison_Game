@@ -2,7 +2,11 @@ package model;
 
 import java.util.List;
 
-/** An NPC with combat stats, a riddle, and a single set of rewards. */
+/**
+ * An NPC with combat stats, a riddle, and a single set of rewards.
+ *
+ * @author Minh
+ */
 public class Npc {
     private final Position position;
     private final int attack;

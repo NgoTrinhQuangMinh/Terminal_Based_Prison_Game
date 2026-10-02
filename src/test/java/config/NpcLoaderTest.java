@@ -17,7 +17,11 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Tests NPC configuration loading through its public entry point and isolated resource fixtures. */
+/**
+ * Tests NPC configuration loading through its public entry point and isolated resource fixtures.
+ *
+ * @author Minh
+ */
 class NpcLoaderTest {
     @TempDir
     Path resources;
