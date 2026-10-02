@@ -219,4 +219,23 @@ public class GameEngine {
         if (npc == null) { return "There is no NPC here to talk to."; }
         return "NPC: " + npc.offerRiddle() + "\nType answer <your answer>.";
     }
+
+    /**
+     * Checks a proposed answer for the current NPC encounter.
+     *
+     * <p>Requires a current unresolved NPC and an already offered riddle. Blank and incorrect attempts award nothing. A correct answer resolves that NPC before granting its configured drops, without combat damage.</p>
+     *
+     * @author Minh
+     * @param attempt non-null answer text from command argument parsing
+     * @return feedback for an invalid target, missing question, unsuccessful attempt or successful resolution
+     */
+    private String answer(String attempt) {
+        Npc npc = currentNpc();
+        if (npc == null) { return "There is no NPC here to answer."; }
+        if (!npc.riddleOffered()) { return "Talk to the NPC to hear its riddle first."; }
+        if (attempt.isBlank()) { return "Type answer <your answer>."; }
+        if (!npc.accepts(attempt)) { return "NPC: Incorrect. Try again, or choose to fight."; }
+        npc.resolve();
+        return "NPC: Correct! " + awardDrops(npc);
+    }
 }
