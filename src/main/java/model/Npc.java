@@ -22,6 +22,8 @@ public class Npc {
      *
      * <p>Requires positive combat values and non-blank puzzle text, trims the accepted answer, and copies the reward list. A new encounter begins unresolved with its riddle not yet offered.</p>
      *
+     *
+     * @author Minh
      * @param position map coordinate occupied by this NPC
      * @param health strictly positive starting health
      * @param attack strictly positive counterattack damage
@@ -47,6 +49,8 @@ public class Npc {
      *
      * <p>The position is fixed for this NPC and is used to select the encounter at the player's location.</p>
      *
+     *
+     * @author Minh
      * @return the NPC position
      */
     public Position position() { return position; }
@@ -55,6 +59,8 @@ public class Npc {
      *
      * <p>Combat reduces this value; resolving a riddle does not require reducing health to zero.</p>
      *
+     *
+     * @author Minh
      * @return current NPC health
      */
     public int health() { return health; }
@@ -63,6 +69,8 @@ public class Npc {
      *
      * <p>The engine applies this value when the NPC survives a player attack.</p>
      *
+     *
+     * @author Minh
      * @return the configured attack value
      */
     public int attack() { return attack; }
@@ -71,6 +79,8 @@ public class Npc {
      *
      * <p>An encounter can be resolved by defeat or explicit resolution after a correct riddle answer.</p>
      *
+     *
+     * @author Minh
      * @return true when the NPC is no longer an active encounter
      */
     public boolean resolved() { return resolved; }
@@ -79,6 +89,8 @@ public class Npc {
      *
      * <p>The list is immutable and retains repeated entries. Reading it neither grants rewards nor resolves the encounter.</p>
      *
+     *
+     * @author Minh
      * @return the immutable list of reward item names
      */
     public List<String> drops() { return drops; }
@@ -87,6 +99,8 @@ public class Npc {
      *
      * <p>The flag records dialogue progress independently of the resolved state.</p>
      *
+     *
+     * @author Minh
      * @return true after offerRiddle has been called
      */
     public boolean riddleOffered() { return riddleOffered; }
@@ -96,6 +110,8 @@ public class Npc {
      *
      * <p>Sets the offered flag and returns the same configured question on subsequent calls. It does not damage or resolve the NPC.</p>
      *
+     *
+     * @author Minh
      * @return the configured riddle text
      */
     public String offerRiddle() { riddleOffered = true; return riddle; }
@@ -105,6 +121,8 @@ public class Npc {
      *
      * <p>Returns false until the question has been offered. Once offered, comparison ignores case and surrounding whitespace. A match does not itself resolve the NPC or award items.</p>
      *
+     *
+     * @author Minh
      * @param attempt answer text to compare; must be non-null when the riddle has been offered
      * @return true if the riddle was offered and the normalised answer matches
      */
@@ -115,6 +133,8 @@ public class Npc {
      *
      * <p>Negative damage has no effect and health cannot drop below zero. Reaching zero resolves the encounter; this model method does not award inventory items.</p>
      *
+     *
+     * @author Minh
      * @param damage requested damage amount; negative values are treated as zero
      */
     public void hit(int damage) {
@@ -126,6 +146,8 @@ public class Npc {
      * Marks this encounter as completed.
      *
      * <p>The operation is idempotent and does not change health, riddle text or configured rewards. The engine excludes resolved NPCs from later interactions.</p>
+     *
+     * @author Minh
      */
     public void resolve() { resolved = true; }
 }

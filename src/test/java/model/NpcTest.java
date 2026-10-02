@@ -16,13 +16,19 @@ class NpcTest {
     /**
      * Creates a fresh encounter for tests that do not vary constructor arguments.
      *
+     *
+     * @author Minh
      * @return an unresolved NPC with six health, two attack and a whitespace-padded answer
      */
     private Npc newNpc() {
         return new Npc(new Position(2, 3), 6, 2, "What tells the time?", " clock ", List.of("Key", "Herb"));
     }
 
-    /** Verifies configured values are available and a new encounter has no dialogue progress. */
+    /**
+     * Verifies configured values are available and a new encounter has no dialogue progress.
+     *
+     * @author Minh
+     */
     @Test
     void newEncounterExposesConfiguredState() {
         Npc npc = newNpc();
@@ -34,7 +40,11 @@ class NpcTest {
                 () -> assertFalse(npc.riddleOffered()));
     }
 
-    /** Verifies both zero and negative health are rejected at construction. */
+    /**
+     * Verifies both zero and negative health are rejected at construction.
+     *
+     * @author Minh
+     */
     @Test
     void rejectsNonPositiveHealth() {
         for (int health : new int[]{0, -1}) {
@@ -43,7 +53,11 @@ class NpcTest {
         }
     }
 
-    /** Verifies both zero and negative attack values are rejected at construction. */
+    /**
+     * Verifies both zero and negative attack values are rejected at construction.
+     *
+     * @author Minh
+     */
     @Test
     void rejectsNonPositiveAttack() {
         for (int attack : new int[]{0, -1}) {
@@ -52,7 +66,11 @@ class NpcTest {
         }
     }
 
-    /** Verifies empty and whitespace-only riddles and answers cannot create an encounter. */
+    /**
+     * Verifies empty and whitespace-only riddles and answers cannot create an encounter.
+     *
+     * @author Minh
+     */
     @Test
     void rejectsBlankPuzzleText() {
         for (String blank : List.of("", " \t\n")) {
@@ -63,14 +81,22 @@ class NpcTest {
         }
     }
 
-    /** Verifies an encounter must have at least one configured reward. */
+    /**
+     * Verifies an encounter must have at least one configured reward.
+     *
+     * @author Minh
+     */
     @Test
     void rejectsEmptyRewards() {
         assertThrows(IllegalArgumentException.class, () ->
                 new Npc(new Position(0, 0), 6, 2, "Question", "answer", List.of()));
     }
 
-    /** Verifies reward ownership is isolated from callers while preserving order and duplicates. */
+    /**
+     * Verifies reward ownership is isolated from callers while preserving order and duplicates.
+     *
+     * @author Minh
+     */
     @Test
     void rewardsAreDefensivelyCopiedAndImmutable() {
         List<String> rewards = new ArrayList<>(List.of("Herb", "Key", "Herb"));
@@ -81,7 +107,11 @@ class NpcTest {
         assertFalse(npc.resolved());
     }
 
-    /** Verifies zero and negative damage neither heals the NPC nor resolves the encounter. */
+    /**
+     * Verifies zero and negative damage neither heals the NPC nor resolves the encounter.
+     *
+     * @author Minh
+     */
     @Test
     void nonPositiveDamageHasNoEffect() {
         Npc npc = newNpc();
@@ -92,7 +122,11 @@ class NpcTest {
         assertFalse(npc.resolved());
     }
 
-    /** Verifies successive nonfatal hits reduce health without ending the encounter. */
+    /**
+     * Verifies successive nonfatal hits reduce health without ending the encounter.
+     *
+     * @author Minh
+     */
     @Test
     void damageAccumulatesAcrossHits() {
         Npc npc = newNpc();
@@ -103,7 +137,11 @@ class NpcTest {
         assertEquals(2, npc.attack());
     }
 
-    /** Verifies damage exactly equal to remaining health resolves the encounter. */
+    /**
+     * Verifies damage exactly equal to remaining health resolves the encounter.
+     *
+     * @author Minh
+     */
     @Test
     void exactLethalDamageResolvesEncounter() {
         Npc npc = newNpc();
@@ -112,7 +150,11 @@ class NpcTest {
         assertTrue(npc.resolved());
     }
 
-    /** Verifies excessive and repeated damage leaves defeated NPC health at zero. */
+    /**
+     * Verifies excessive and repeated damage leaves defeated NPC health at zero.
+     *
+     * @author Minh
+     */
     @Test
     void excessiveDamageIsClampedToZero() {
         Npc npc = newNpc();
@@ -124,7 +166,11 @@ class NpcTest {
         assertTrue(npc.resolved());
     }
 
-    /** Verifies explicit resolution is repeatable and preserves health, rewards and dialogue progress. */
+    /**
+     * Verifies explicit resolution is repeatable and preserves health, rewards and dialogue progress.
+     *
+     * @author Minh
+     */
     @Test
     void explicitResolutionPreservesOtherState() {
         Npc npc = newNpc();
@@ -137,7 +183,11 @@ class NpcTest {
         assertTrue(npc.riddleOffered());
     }
 
-    /** Verifies even the correct answer is rejected before dialogue begins. */
+    /**
+     * Verifies even the correct answer is rejected before dialogue begins.
+     *
+     * @author Minh
+     */
     @Test
     void answerRequiresRiddleToBeOffered() {
         Npc npc = newNpc();
@@ -146,7 +196,11 @@ class NpcTest {
         assertFalse(npc.resolved());
     }
 
-    /** Verifies repeat dialogue returns the configured question without damaging or resolving the NPC. */
+    /**
+     * Verifies repeat dialogue returns the configured question without damaging or resolving the NPC.
+     *
+     * @author Minh
+     */
     @Test
     void offeringRiddleRecordsDialogueProgress() {
         Npc npc = newNpc();
@@ -157,7 +211,11 @@ class NpcTest {
         assertFalse(npc.resolved());
     }
 
-    /** Verifies answer matching ignores case and surrounding whitespace without resolving or rewarding. */
+    /**
+     * Verifies answer matching ignores case and surrounding whitespace without resolving or rewarding.
+     *
+     * @author Minh
+     */
     @Test
     void correctAnswerIsNormalizedWithoutResolvingEncounter() {
         Npc npc = newNpc();
@@ -169,7 +227,11 @@ class NpcTest {
         assertEquals(List.of("Key", "Herb"), npc.drops());
     }
 
-    /** Verifies incorrect and blank answers leave the riddle available for a later correct attempt. */
+    /**
+     * Verifies incorrect and blank answers leave the riddle available for a later correct attempt.
+     *
+     * @author Minh
+     */
     @Test
     void incorrectAnswersAllowRetry() {
         Npc npc = newNpc();

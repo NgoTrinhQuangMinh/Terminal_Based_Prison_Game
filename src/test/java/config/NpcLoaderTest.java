@@ -26,7 +26,11 @@ class NpcLoaderTest {
     @TempDir
     Path resources;
 
-    /** Verifies bundled properties supply each marker's stats, riddle, answer and canonical rewards. */
+    /**
+     * Verifies bundled properties supply each marker's stats, riddle, answer and canonical rewards.
+     *
+     * @author Minh
+     */
     @Test
     void loadsConfiguredNpcsAtMatchingMarkers() {
         Maze maze = MazeLoader.loadDefault();
@@ -50,7 +54,11 @@ class NpcLoaderTest {
         assertTrue(second.accepts("egg"));
     }
 
-    /** Verifies only markers present in the supplied maze are loaded, in map scan order. */
+    /**
+     * Verifies only markers present in the supplied maze are loaded, in map scan order.
+     *
+     * @author Minh
+     */
     @Test
     void followsMazeMarkersRatherThanPropertyOrder() {
         Maze maze = new Maze(List.of("P21X"));
@@ -61,7 +69,11 @@ class NpcLoaderTest {
         assertTrue(NpcLoader.loadDefault(new Maze(List.of("PX"))).isEmpty());
     }
 
-    /** Verifies loading again does not reuse damaged, resolved or previously offered encounter state. */
+    /**
+     * Verifies loading again does not reuse damaged, resolved or previously offered encounter state.
+     *
+     * @author Minh
+     */
     @Test
     void eachLoadCreatesIndependentEncounters() {
         Maze maze = MazeLoader.loadDefault();
@@ -77,7 +89,11 @@ class NpcLoaderTest {
         assertFalse(first.get(1).resolved());
     }
 
-    /** Verifies UTF-8 text, surrounding spaces and repeated reward tokens survive configuration loading. */
+    /**
+     * Verifies UTF-8 text, surrounding spaces and repeated reward tokens survive configuration loading.
+     *
+     * @author Minh
+     */
     @Test
     void supportsUtf8AndRepeatedTrimmedDrops() throws Exception {
         String config = validConfig().replace("Question?", "Caf\u00e9 question?")
@@ -91,7 +107,11 @@ class NpcLoaderTest {
         }
     }
 
-    /** Verifies every required property rejects both omission and whitespace-only values. */
+    /**
+     * Verifies every required property rejects both omission and whitespace-only values.
+     *
+     * @author Minh
+     */
     @Test
     void rejectsMissingAndBlankProperties() throws Exception {
         for (String key : List.of("health", "attack", "riddle", "answer", "drops")) {
@@ -102,7 +122,11 @@ class NpcLoaderTest {
         }
     }
 
-    /** Verifies malformed, out-of-range and non-positive combat values cannot create NPCs. */
+    /**
+     * Verifies malformed, out-of-range and non-positive combat values cannot create NPCs.
+     *
+     * @author Minh
+     */
     @Test
     void rejectsInvalidCombatValues() throws Exception {
         for (String key : List.of("health", "attack")) {
@@ -113,7 +137,11 @@ class NpcLoaderTest {
         }
     }
 
-    /** Verifies unknown rewards and empty comma-separated tokens are rejected rather than ignored. */
+    /**
+     * Verifies unknown rewards and empty comma-separated tokens are rejected rather than ignored.
+     *
+     * @author Minh
+     */
     @Test
     void rejectsUnsupportedAndEmptyDropTokens() throws Exception {
         for (String drops : List.of("gold", "herb,", ",key", "herb,,key")) {
@@ -122,14 +150,22 @@ class NpcLoaderTest {
         }
     }
 
-    /** Verifies a maze marker without a corresponding configuration entry fails explicitly. */
+    /**
+     * Verifies a maze marker without a corresponding configuration entry fails explicitly.
+     *
+     * @author Minh
+     */
     @Test
     void rejectsUnconfiguredMarker() {
         assertThrows(IllegalArgumentException.class,
                 () -> NpcLoader.loadDefault(new Maze(List.of("P3X"))));
     }
 
-    /** Verifies an absent classpath resource reports a loading failure. */
+    /**
+     * Verifies an absent classpath resource reports a loading failure.
+     *
+     * @author Minh
+     */
     @Test
     void rejectsMissingResource() throws Exception {
         assertInvalid(null, IllegalStateException.class);
@@ -138,6 +174,8 @@ class NpcLoaderTest {
     /**
      * Provides one valid fixture that individual validation tests can change independently.
      *
+     *
+     * @author Minh
      * @return properties for marker 1 with positive stats and two supported rewards
      */
     private String validConfig() {
@@ -148,6 +186,8 @@ class NpcLoaderTest {
     /**
      * Loads production classes with an isolated resource directory, leaving bundled resources untouched.
      *
+     *
+     * @author Minh
      * @param config UTF-8 fixture contents, or null to simulate a missing resource
      * @return a class loader that the caller must close
      * @throws IOException if the temporary fixture cannot be written
@@ -165,6 +205,8 @@ class NpcLoaderTest {
     /**
      * Invokes the public loader using model types from the same isolated class loader.
      *
+     *
+     * @author Minh
      * @param loader loader containing the fixture and production classes
      * @return NPC objects created from the fixture
      * @throws ReflectiveOperationException if loading or invoking the production classes fails
@@ -179,6 +221,8 @@ class NpcLoaderTest {
     /**
      * Checks a public loading failure without depending on private helper methods.
      *
+     *
+     * @author Minh
      * @param config fixture contents, or null for a missing resource
      * @param expected expected underlying exception type
      * @throws Exception if fixture setup or cleanup fails
