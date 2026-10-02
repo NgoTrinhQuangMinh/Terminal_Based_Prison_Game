@@ -191,4 +191,18 @@ public class GameEngine {
         return npcs.stream().filter(n -> !n.resolved() && n.position().equals(player.position()))
                 .findFirst().orElse(null);
     }
+
+    /**
+     * Adds all rewards from an NPC to the player inventory.
+     *
+     * <p>Preserves configured order and duplicates and does not automatically use or equip items. The caller must ensure this is called only once for a completed encounter; this helper does not enforce that condition itself.</p>
+     *
+     * @author Minh
+     * @param npc NPC whose configured drops are to be awarded
+     * @return feedback listing the collected item names
+     */
+    private String awardDrops(Npc npc) {
+        npc.drops().forEach(player.inventory()::add);
+        return "Drops collected: " + String.join(", ", npc.drops()) + ".";
+    }
 }
