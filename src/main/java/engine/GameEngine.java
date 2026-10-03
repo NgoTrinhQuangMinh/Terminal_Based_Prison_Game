@@ -8,6 +8,7 @@ import model.Npc;
 import model.Player;
 import model.Position;
 import model.Inventory;
+import ui.PlayerStatusView;
 
 /**
  * Holds the state of one game session and reports whether it has ended.
@@ -23,6 +24,19 @@ public class GameEngine {
 
     /** The maze marker for the player's starting position. */
     public static final char START = 'P';
+
+    /** Lists the commands the player can type. */
+    public static final String HELP_TEXT =
+            "Commands: forward/w, backward/s, left/a, right/d, fight/f, talk/t, "
+            + "answer <text>, use <item>, inventory/i, look, help, quit/q.";
+
+    /** Explains the goal of the game. */
+    public static final String OBJECTIVE_TEXT =
+            "Get the exit key from an NPC by fighting it or answering its riddle, "
+            + "then reach the exit (X) to escape.";
+
+    /** Feedback given for any command after the game has ended. */
+    public static final String GAME_OVER_TEXT = "The game is over.";
 
     private final Maze maze;
     private final Player player;
@@ -118,6 +132,42 @@ public class GameEngine {
      */
     public boolean finished() {
         return won || quit || player.health() == 0;
+    }
+
+    /**
+     * Runs one line of player input and returns the resulting feedback.
+     *
+     * <p>This is the single entry point shared by the terminal UI and the
+     * automatic game tester. The first word selects the command and the rest
+     * of the line is passed on as its argument, so multi-word answers and
+     * item names work. Unknown input changes nothing. Once the game has
+     * finished, no further commands are run.</p>
+     *
+     * @param input the line typed by the player; may be null
+     * @return feedback describing what happened
+     */
+    public String execute(String input) {
+        if (finished()) {
+            return GAME_OVER_TEXT;
+        }
+        Command command = Command.parse(input);
+        String argument = Command.argument(input);
+
+        return switch (command) {
+            case LEFT, RIGHT, FORWARD, BACKWARD -> move(command);
+            case FIGHT -> fight();
+            case TALK -> talk();
+            case ANSWER -> answer(argument);
+            case USE -> player.use(argument);
+            case INVENTORY -> PlayerStatusView.inventoryText(player.inventory());
+            case HELP -> HELP_TEXT;
+            case LOOK -> OBJECTIVE_TEXT;
+            case QUIT -> {
+                quit();
+                yield "You give up on escaping. Goodbye.";
+            }
+            case UNKNOWN -> "Unknown command. Type help to see the commands.";
+        };
     }
 
     /**
