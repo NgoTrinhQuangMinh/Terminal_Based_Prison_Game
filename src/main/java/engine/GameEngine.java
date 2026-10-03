@@ -19,6 +19,7 @@ import ui.PlayerStatusView;
  *
  * @author Xinran Tian
  * @author Minh
+ * @author Lia Huang
  */
 public class GameEngine {
 
@@ -323,5 +324,68 @@ public class GameEngine {
         if (player.health() == 0) { return "You have fallen. Game over."; }
         return "You deal " + player.attack() + " damage. NPC has " + npc.health()
                 + " health and hits you for " + npc.attack() + ".";
+    }
+
+    /**
+     * Renders the current maze and player status as plain text.
+     *
+     * <p>The stored maze remains unchanged. Its original player start and
+     * numbered NPC markers are shown as floor, then unresolved NPCs and the
+     * current player position are overlaid. The player marker takes priority
+     * when the player shares a tile with an unresolved NPC.</p>
+     *
+     * @author Lia Huang
+     * @return the current map, legend and player status
+     */
+    public String render() {
+        StringBuilder output = new StringBuilder();
+
+        for (int y = 0; y < maze.height(); y++) {
+            for (int x = 0; x < maze.width(); x++) {
+                Position position = new Position(x, y);
+                char tile = maze.at(position);
+
+                if (tile == START
+                        || (tile >= '1' && tile <= '9')) {
+                    tile = '.';
+                }
+
+                if (hasUnresolvedNpcAt(position)) {
+                    tile = 'N';
+                }
+
+                if (player.position().equals(position)) {
+                    tile = '@';
+                }
+
+                output.append(tile);
+            }
+
+            output.append('\n');
+        }
+
+        output.append(
+                "Legend: @ = player | N = unresolved NPC | X = exit\n"
+        );
+
+        output.append(
+                PlayerStatusView.statusLine(player)
+        );
+
+        return output.toString();
+    }
+
+    /**
+     * Checks whether an unresolved NPC occupies a map position.
+     *
+     * @author Lia Huang
+     * @param position position to inspect
+     * @return true when an unresolved NPC occupies the position
+     */
+    private boolean hasUnresolvedNpcAt(Position position) {
+        return npcs.stream()
+                .anyMatch(npc ->
+                        !npc.resolved()
+                                && npc.position().equals(position));
     }
 }
