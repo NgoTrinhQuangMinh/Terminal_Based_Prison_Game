@@ -14,7 +14,9 @@ import org.jline.utils.AttributedStyle;
 import org.jline.utils.Display;
 import org.jline.utils.InfoCmp.Capability;
 
-/** Full-screen terminal UI with immediate keys and isolated riddle typing. */
+/** Full-screen terminal UI with immediate keys and isolated riddle typing.
+ * @author Minh
+ */
 public class ConsoleUI {
     private final GameEngine game;
     private final GameControls controls;
@@ -63,14 +65,19 @@ public class ConsoleUI {
             display.clear();
             BindingReader reader = new BindingReader(terminal.reader());
             KeyMap<String> keys = keys(terminal);
+            int displayedLevel = game.levelNumber();
             while (true) {
+                if (displayedLevel != game.levelNumber()) {
+                    display.clear();
+                    displayedLevel = game.levelNumber();
+                }
                 draw(terminal, display);
                 String binding = reader.readBinding(keys);
                 if (binding == null || game.finished()) { break; }
                 String key = binding.equals("TEXT") ? reader.getLastBinding() : binding;
                 boolean quitting = key.equals("\u0003") || key.equals("\u0004")
                         || (!controls.answering() && key.equalsIgnoreCase("q"));
-                if (quitting || (terminal.getWidth() >= 70 && terminal.getHeight() >= 24)) {
+                if (quitting || (terminal.getWidth() >= minimumWidth() && terminal.getHeight() >= minimumHeight())) {
                     controls.handle(key);
                 }
                 if (quitting) { break; }
@@ -128,18 +135,19 @@ public class ConsoleUI {
     /**
      * Draws a bounded frame for the current terminal size.
      *
-     * <p>Shows a resize prompt for terminals smaller than 70 columns by 24 rows. Otherwise displays the map, controls, inventory visibility, feedback and answer input. Clips output to the available rows and columns, updates the display and flushes the terminal without changing gameplay state.</p>
+     * <p>Shows a resize prompt when the current map and controls cannot fit, with a minimum of 70 columns by 24 rows. Otherwise displays the map, controls, inventory visibility, feedback and answer input. Clips output to the available rows and columns, updates the display and flushes the terminal without changing gameplay state.</p>
      *
      * @param terminal terminal providing dimensions and output
      * @param display display updater that applies the new frame
      */
     private void draw(Terminal terminal, Display display) {
+        controls.synchronizeLevel();
         int width = Math.max(1, terminal.getWidth());
         int height = Math.max(1, terminal.getHeight());
         display.resize(height, width);
         List<AttributedString> lines = new ArrayList<>();
-        if (width < 70 || height < 24) {
-            lines.add(new AttributedString("Resize terminal to at least 70 columns x 24 rows."));
+        if (width < minimumWidth() || height < minimumHeight()) {
+            lines.add(new AttributedString("Resize terminal to at least " + minimumWidth() + " columns x " + minimumHeight() + " rows."));
             lines.add(new AttributedString("Current size: " + width + " x " + height + ". Press a key to refresh."));
             lines.add(new AttributedString("Q quits; Escape cancels riddle input."));
         } else {
@@ -169,8 +177,26 @@ public class ConsoleUI {
         }
         List<AttributedString> frame = lines.stream().limit(height - 1L)
                 .map(line -> line.columnSubSequence(0, width - 1)).toList();
-        display.update(frame, -1);
+        display.update(new ArrayList<>(frame), -1);
         terminal.flush();
+    }
+
+    /**
+     * Calculates the width needed to show this level without clipping the map or status.
+     * @author Minh
+     * @return required terminal columns, including one spare column
+     */
+    private int minimumWidth() {
+        return Math.max(70, game.render().lines().mapToInt(String::length).max().orElse(0) + 1);
+    }
+
+    /**
+     * Reserves enough rows for the current map, feedback, inventory and answer controls.
+     * @author Minh
+     * @return required terminal rows, including the unused final row
+     */
+    private int minimumHeight() {
+        return Math.max(24, (int) game.render().lines().count() + 14);
     }
 
     /**

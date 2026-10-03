@@ -3,11 +3,14 @@ package ui;
 import engine.GameEngine;
 import java.util.Locale;
 
-/** Immediate game controls, with a separate buffer for riddle answers. */
+/** Immediate game controls, with a separate buffer for riddle answers.
+ * @author Minh
+ */
 public class GameControls {
     private final GameEngine game;
     private final StringBuilder answer = new StringBuilder();
     private boolean answering;
+    private int observedLevel;
     private boolean inventoryVisible;
     private String message = "Find the key. Fight an NPC or solve its riddle for drops.";
 
@@ -18,7 +21,7 @@ public class GameControls {
      *
      * @param game engine that receives translated player commands
      */
-    public GameControls(GameEngine game) { this.game = game; }
+    public GameControls(GameEngine game) { this.game = game; observedLevel = game.levelNumber(); }
     /**
      * Returns the latest feedback shown by the controller.
      *
@@ -60,6 +63,7 @@ public class GameControls {
      * @param key non-null input character, control character, or named arrow key such as UP
      */
     public void handle(String key) {
+        synchronizeLevel();
         if (game.finished()) { return; }
         if (key.equals("\u0003") || key.equals("\u0004")) {
             message = game.execute("quit");
@@ -84,11 +88,29 @@ public class GameControls {
         if (key.equalsIgnoreCase("i")) { inventoryVisible = !inventoryVisible; }
         if (!command.isEmpty()) {
             message = game.execute(command);
+            synchronizeLevel();
             if (command.equals("talk") && game.canAnswerRiddle()) {
                 answering = true;
                 answer.setLength(0);
                 message = message.replace("\nType answer <your answer>.", "");
             }
+        }
+    }
+
+    /**
+     * Clears input belonging to a previous map and reports the new level.
+     *
+     * <p>Called before input and rendering so transitions initiated outside this controller
+     * cannot leave old answer text active. Inventory visibility is retained.</p>
+     * @author Minh
+     */
+    void synchronizeLevel() {
+        if (observedLevel != game.levelNumber()) {
+            observedLevel = game.levelNumber();
+            answering = false;
+            answer.setLength(0);
+            message = "Entered level " + game.levelNumber() + "/" + game.levelCount()
+                    + ": " + game.levelName() + ". Find its exit key.";
         }
     }
 
