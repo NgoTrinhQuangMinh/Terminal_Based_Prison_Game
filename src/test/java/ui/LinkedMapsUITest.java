@@ -6,7 +6,6 @@ import model.Maze;
 import model.Position;
 import org.junit.jupiter.api.Test;
 import org.jline.terminal.Size;
-import org.jline.terminal.TerminalBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -71,8 +70,7 @@ class LinkedMapsUITest {
     @Test void terminalLoopCompletesBothMaps() throws Exception {
         GameEngine game = game(); ByteArrayOutputStream output = new ByteArrayOutputStream();
         byte[] input = "dtclock\rdddtpiano\rddq".getBytes(StandardCharsets.UTF_8);
-        try (var terminal = TerminalBuilder.builder().system(false).type("xterm")
-                .streams(new ByteArrayInputStream(input), output).build()) {
+        try (var terminal = TestTerminal.create(new ByteArrayInputStream(input), output)) {
             terminal.setSize(new Size(80, 24));
             var original = terminal.getAttributes();
             new ConsoleUI(game).run(terminal);
@@ -91,8 +89,7 @@ class LinkedMapsUITest {
         GameEngine game = new GameEngine(List.of(new Level("Wide",
                 new Maze(List.of("P" + ".".repeat(90) + "X")), "/npcs.properties")));
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        try (var terminal = TerminalBuilder.builder().system(false).type("xterm")
-                .streams(new ByteArrayInputStream("dq".getBytes(StandardCharsets.UTF_8)), output).build()) {
+        try (var terminal = TestTerminal.create(new ByteArrayInputStream("dq".getBytes(StandardCharsets.UTF_8)), output)) {
             terminal.setSize(new Size(80, 24));
             new ConsoleUI(game).run(terminal);
         }

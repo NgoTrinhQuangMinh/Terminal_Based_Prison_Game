@@ -3,7 +3,6 @@ package ui;
 import engine.GameEngine;
 import model.Difficulty;
 import org.jline.terminal.Size;
-import org.jline.terminal.TerminalBuilder;
 import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,8 +21,7 @@ class DifficultyMenuTest {
      * @throws Exception if virtual terminal setup or reading fails
      */
     private Difficulty select(String input) throws Exception {
-        try (var terminal = TerminalBuilder.builder().system(false).type("xterm")
-                .streams(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)), new ByteArrayOutputStream()).build()) {
+        try (var terminal = TestTerminal.create(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)), new ByteArrayOutputStream())) {
             var before = terminal.getAttributes();
             Difficulty result = DifficultyMenu.select(terminal);
             assertEquals(before.getLocalFlags(), terminal.getAttributes().getLocalFlags());
@@ -61,8 +59,7 @@ class DifficultyMenuTest {
     @Test void selectionHandsOffToContinuousGame() throws Exception {
         for (int choice = 1; choice <= 3; choice++) {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
-            try (var terminal = TerminalBuilder.builder().system(false).type("xterm")
-                    .streams(new ByteArrayInputStream((choice + "dq").getBytes(StandardCharsets.UTF_8)), output).build()) {
+            try (var terminal = TestTerminal.create(new ByteArrayInputStream((choice + "dq").getBytes(StandardCharsets.UTF_8)), output)) {
                 terminal.setSize(new Size(100, 35));
                 var before = terminal.getAttributes();
                 GameEngine game = GameLauncher.run(terminal);
@@ -81,8 +78,7 @@ class DifficultyMenuTest {
      */
     @Test void launcherCancellationReturnsToTerminal() throws Exception {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        try (var terminal = TerminalBuilder.builder().system(false).type("xterm")
-                .streams(new ByteArrayInputStream("q".getBytes(StandardCharsets.UTF_8)), output).build()) {
+        try (var terminal = TestTerminal.create(new ByteArrayInputStream("q".getBytes(StandardCharsets.UTF_8)), output)) {
             assertNull(GameLauncher.run(terminal));
         }
         assertTrue(output.toString(StandardCharsets.UTF_8).contains("Goodbye."));

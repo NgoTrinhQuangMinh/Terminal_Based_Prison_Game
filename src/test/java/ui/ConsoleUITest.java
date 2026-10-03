@@ -6,7 +6,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import org.jline.terminal.Size;
-import org.jline.terminal.TerminalBuilder;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,8 +24,7 @@ class ConsoleUITest {
         byte[] input = "\u001b[C\u001b[C\u001b[B\u001b[Bdddtclock\rq".getBytes(StandardCharsets.UTF_8);
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         GameEngine game = new GameEngine(MazeLoader.loadDefault());
-        try (var terminal = TerminalBuilder.builder().system(false).type("xterm")
-                .streams(new ByteArrayInputStream(input), output).build()) {
+        try (var terminal = TestTerminal.create(new ByteArrayInputStream(input), output)) {
             terminal.setSize(new Size(80, 24));
             var original = terminal.getAttributes();
             new ConsoleUI(game).run(terminal);
