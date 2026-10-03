@@ -106,8 +106,6 @@ class CommandTest {
      */
     @Test
     void unsupportedInputReturnsUnknown() {
-        assertEquals(Command.UNKNOWN, Command.parse("fight"));
-        assertEquals(Command.UNKNOWN, Command.parse("talk"));
         assertEquals(Command.UNKNOWN, Command.parse("jump"));
         assertEquals(Command.UNKNOWN, Command.parse("hello"));
     }
@@ -132,5 +130,44 @@ class CommandTest {
         assertEquals(Command.USE, Command.parse("use herb"));
         assertEquals(Command.USE, Command.parse("equip weapon"));
         assertEquals(Command.USE, Command.parse("USE Healing herb"));
+    }
+
+    /**
+     * Verifies that NPC interaction commands and their aliases are recognised.
+     */
+    @Test
+    void parsesNpcInteractionCommands() {
+        assertEquals(Command.FIGHT, Command.parse("fight"));
+        assertEquals(Command.FIGHT, Command.parse("f"));
+        assertEquals(Command.TALK, Command.parse("talk"));
+        assertEquals(Command.TALK, Command.parse("t"));
+        assertEquals(Command.ANSWER, Command.parse("answer clock"));
+    }
+
+    /**
+     * Verifies that help, look and quit commands and their aliases are recognised.
+     */
+    @Test
+    void parsesGameControlCommands() {
+        assertEquals(Command.HELP, Command.parse("help"));
+        assertEquals(Command.HELP, Command.parse("h"));
+        assertEquals(Command.HELP, Command.parse("?"));
+        assertEquals(Command.LOOK, Command.parse("look"));
+        assertEquals(Command.LOOK, Command.parse("map"));
+        assertEquals(Command.QUIT, Command.parse("quit"));
+        assertEquals(Command.QUIT, Command.parse("Q"));
+    }
+
+    /**
+     * Verifies that the argument after the command word is extracted and
+     * that spaces inside it are kept.
+     */
+    @Test
+    void extractsArgumentAfterCommand() {
+        assertEquals("Healing herb", Command.argument("use Healing herb"));
+        assertEquals("a clock", Command.argument("  answer   a clock  "));
+        assertEquals("", Command.argument("fight"));
+        assertEquals("", Command.argument("   "));
+        assertEquals("", Command.argument(null));
     }
 }
