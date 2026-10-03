@@ -237,5 +237,23 @@ public class GameEngine {
         if (!npc.accepts(attempt)) { return "NPC: Incorrect. Try again, or choose to fight."; }
         npc.resolve();
         return "NPC: Correct! " + awardDrops(npc);
+
+    /**
+     * Performs one player-first combat exchange.
+     *
+     * <p>Requires an active NPC at the player location. A defeated NPC grants rewards and does not counterattack; a surviving NPC damages the player. Reports player death or the remaining combat stats without reading terminal input.</p>
+     *
+     * @author Minh
+     * @return feedback for an unavailable target, combat exchange, NPC defeat or player death
+     */
+    private String fight() {
+        Npc npc = currentNpc();
+        if (npc == null) { return "There is no NPC here to fight."; }
+        npc.hit(player.attack());
+        if (npc.resolved()) { return "You defeat the NPC. " + awardDrops(npc); }
+        player.damage(npc.attack());
+        if (player.health() == 0) { return "You have fallen. Game over."; }
+        return "You deal " + player.attack() + " damage. NPC has " + npc.health()
+                + " health and hits you for " + npc.attack() + ".";
     }
 }
