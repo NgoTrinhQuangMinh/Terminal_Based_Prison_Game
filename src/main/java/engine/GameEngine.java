@@ -4,6 +4,7 @@ import command.Command;
 import config.NpcLoader;
 import java.util.List;
 import model.Npc;
+import model.Level;
 import model.Maze;
 import model.Player;
 import model.Position;
@@ -17,9 +18,11 @@ public class GameEngine {
             + "On N: fight (f), or talk (t) then answer <your answer>.\n"
             + "Drops enter your inventory automatically. Use herb to heal; use weapon to equip.\n"
             + "Other commands: inventory (i), look, help, quit (q).";
-    private final Maze maze;
+    private Maze maze;
+    private final List<Level> levels;
+    private int levelIndex;
     private final Player player;
-    private final List<Npc> npcs;
+    private List<Npc> npcs;
     private boolean won;
     private boolean quit;
 
@@ -33,10 +36,45 @@ public class GameEngine {
      * @throws IllegalStateException if the NPC resource cannot be loaded
      */
     public GameEngine(Maze maze) {
-        this.maze = maze;
-        player = new Player(maze.find('P'));
-        npcs = NpcLoader.loadDefault(maze);
+        this(List.of(new Level("Maze", maze, "/npcs.properties")));
     }
+
+    /**
+     * Starts a forward-only campaign with fresh player and first-level encounter state.
+     * @author Minh
+     * @param levels non-empty ordered level definitions; copied before play
+     * @throws IllegalArgumentException if no levels are supplied or NPC data is invalid
+     * @throws IllegalStateException if the first NPC resource cannot be loaded
+     */
+    public GameEngine(List<Level> levels) {
+        if (levels == null || levels.isEmpty()) { throw new IllegalArgumentException("At least one level is required."); }
+        this.levels = List.copyOf(levels);
+        Level first = this.levels.get(0);
+        maze = first.maze();
+        npcs = NpcLoader.load(maze, first.npcResource());
+        player = new Player(maze.find('P'));
+    }
+
+    /**
+     * Returns the current level's one-based position in the campaign.
+     * @author Minh
+     * @return current level number, starting at one
+     */
+    public int levelNumber() { return levelIndex + 1; }
+
+    /**
+     * Returns the number of levels required to finish this campaign.
+     * @author Minh
+     * @return total level count
+     */
+    public int levelCount() { return levels.size(); }
+
+    /**
+     * Returns the configured display name of the current level.
+     * @author Minh
+     * @return current level name
+     */
+    public String levelName() { return levels.get(levelIndex).name(); }
 
     /**
      * Exposes the current session's player model.
@@ -86,7 +124,7 @@ public class GameEngine {
             case USE -> player.use(argument);
             case INVENTORY -> "Inventory: " + (player.inventory().isEmpty() ? "empty" : String.join(", ", player.inventory()));
             case HELP -> HELP;
-            case LOOK -> "Obtain the key from an NPC and reach the exit (X).";
+            case LOOK -> "Obtain a key in each level and reach its exit (X). Each door consumes one key. Escape the final level to win.";
             case QUIT -> { quit = true; yield "Goodbye."; }
             case UNKNOWN -> "Unknown command. Type help for controls.";
         };
@@ -95,23 +133,56 @@ public class GameEngine {
     /**
      * Attempts to move the player by a coordinate offset.
      *
-     * <p>Blocks walls, out-of-bounds destinations and the exit when no key is held. A permitted move updates position, records victory at the exit, or reports an active NPC's stats. Arrival alone does not start combat.</p>
+     * <p>Blocks walls, out-of-bounds destinations and the exit when no key is held. A permitted move updates position, enters the next level or wins at the final exit, or reports an active NPC's stats. Arrival alone does not start combat.</p>
      *
      * @param dx horizontal movement offset in columns
      * @param dy vertical movement offset in rows
-     * @return movement, blocking, encounter or victory feedback
+     * @return movement, blocking, encounter, level transition or victory feedback
      */
     private String move(int dx, int dy) {
         Position next = player.position().move(dx, dy);
         if (maze.isWall(next)) { return "A wall blocks your way."; }
         if (maze.at(next) == 'X' && !player.has(KEY)) { return "The exit is locked. An NPC holds its key."; }
+        if (maze.at(next) == 'X') { return enterExit(next); }
         player.moveTo(next);
-        if (maze.at(next) == 'X') { won = true; return "You unlock the exit and escape the maze. You win!"; }
         Npc npc = currentNpc();
         if (npc != null) {
             return "NPC: Health " + npc.health() + ", Attack " + npc.attack() + ". Choose fight or talk, or move away.";
         }
         return "You move through the maze.";
+    }
+
+    /**
+     * Unlocks an exit and enters the next level, or wins after the final level.
+     *
+     * <p>Loads the next encounters before modifying live state. A loading failure leaves the
+     * player, key and current level intact so the player may retry. Successful transitions
+     * retain health, equipment and other inventory, consume one key and relocate to P.</p>
+     * @author Minh
+     * @param exit validated exit coordinate; the caller has already checked key ownership
+     * @return transition, configuration failure or final victory feedback
+     */
+    private String enterExit(Position exit) {
+        if (levelIndex + 1 == levels.size()) {
+            player.consume(KEY);
+            player.moveTo(exit);
+            won = true;
+            return "You unlock the exit and escape the maze. You win!";
+        }
+        Level nextLevel = levels.get(levelIndex + 1);
+        List<Npc> nextNpcs;
+        try {
+            nextNpcs = NpcLoader.load(nextLevel.maze(), nextLevel.npcResource());
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return "Could not enter the next level: " + exception.getMessage();
+        }
+        player.consume(KEY);
+        maze = nextLevel.maze();
+        npcs = nextNpcs;
+        levelIndex++;
+        player.moveTo(maze.find('P'));
+        return "You unlock the door. Entered level " + levelNumber() + "/" + levelCount()
+                + ": " + levelName() + ". Find its exit key.";
     }
 
     /**
@@ -196,7 +267,7 @@ public class GameEngine {
      * @return a multiline string ready for terminal display
      */
     public String render() {
-        StringBuilder output = new StringBuilder();
+        StringBuilder output = new StringBuilder("Level " + levelNumber() + "/" + levelCount() + ": " + levelName() + "\n");
         for (int y = 0; y < maze.height(); y++) {
             for (int x = 0; x < maze.width(); x++) {
                 Position position = new Position(x, y);

@@ -90,6 +90,14 @@ public class Player {
     public void collect(String item) { inventory.add(item); }
 
     /**
+     * Removes one matching item, preserving all other inventory entries and equipment state.
+     * @author Minh
+     * @param item stored item name to consume
+     * @return true if one matching item was removed
+     */
+    public boolean consume(String item) { return inventory.remove(item); }
+
+    /**
      * Attempts to consume a healing herb or equip a sword.
      *
      * <p>A herb heals up to four points without exceeding maximum health and is consumed only when healing occurs. A held sword grants one persistent attack bonus. Missing items, repeated equipment and unsupported names return feedback without applying the requested effect.</p>

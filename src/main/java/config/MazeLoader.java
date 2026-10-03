@@ -25,12 +25,24 @@ public final class MazeLoader {
      * @throws IllegalArgumentException if the resource contents fail Maze validation
      */
     public static Maze loadDefault() {
-        var stream = MazeLoader.class.getResourceAsStream("/maze.txt");
-        if (stream == null) { throw new IllegalStateException("Missing maze.txt resource."); }
+        return load("/maze.txt");
+    }
+
+    /**
+     * Loads and validates a named UTF-8 map resource, closing its reader.
+     * @author Minh
+     * @param resource absolute classpath map path
+     * @return a fresh validated maze
+     * @throws IllegalStateException if the resource is missing or unreadable
+     * @throws IllegalArgumentException if the layout is invalid
+     */
+    public static Maze load(String resource) {
+        var stream = MazeLoader.class.getResourceAsStream(resource);
+        if (stream == null) { throw new IllegalStateException("Missing maze resource: " + resource); }
         try (var reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
             return new Maze(reader.lines().toList());
         } catch (IOException exception) {
-            throw new IllegalStateException("Could not read maze.txt.", exception);
+            throw new IllegalStateException("Could not read maze: " + resource, exception);
         }
     }
 }

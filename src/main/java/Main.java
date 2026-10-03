@@ -1,4 +1,4 @@
-import config.MazeLoader;
+import config.CampaignLoader;
 import engine.GameEngine;
 import ui.ConsoleUI;
 
@@ -7,13 +7,13 @@ public class Main {
     /**
      * Starts the default maze game.
      *
-     * <p>Loads the bundled maze, creates a fresh engine and starts the terminal UI. Configuration failures propagate to the caller rather than being silently replaced with another game.</p>
+     * <p>Loads the bundled linked levels, creates a fresh engine and starts the terminal UI. Configuration failures propagate to the caller rather than being silently replaced with another game.</p>
      *
      * @param args command-line arguments; currently unused
      * @throws IllegalStateException if bundled game configuration cannot be loaded
      * @throws IllegalArgumentException if the loaded game data is invalid
      */
     public static void main(String[] args) {
-        new ConsoleUI(new GameEngine(MazeLoader.loadDefault())).run();
+        new ConsoleUI(new GameEngine(CampaignLoader.loadDefault())).run();
     }
 }
