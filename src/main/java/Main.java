@@ -1,19 +1,13 @@
-import config.CampaignLoader;
-import engine.GameEngine;
-import ui.ConsoleUI;
+import ui.GameLauncher;
 
-/** Entry point for the maze game skeleton. */
+/** Starts the difficulty menu and continuous maze game.
+ * @author Minh
+ */
 public class Main {
     /**
-     * Starts the default maze game.
-     *
-     * <p>Loads the bundled linked levels, creates a fresh engine and starts the terminal UI. Configuration failures propagate to the caller rather than being silently replaced with another game.</p>
-     *
+     * Lets the player choose a bundled map set before beginning continuous play.
+     * @author Minh
      * @param args command-line arguments; currently unused
-     * @throws IllegalStateException if bundled game configuration cannot be loaded
-     * @throws IllegalArgumentException if the loaded game data is invalid
      */
-    public static void main(String[] args) {
-        new ConsoleUI(new GameEngine(CampaignLoader.loadDefault())).run();
-    }
+    public static void main(String[] args) { GameLauncher.run(); }
 }

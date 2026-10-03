@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import model.Level;
+import model.Difficulty;
 
 /** Loads an ordered sequence of linked levels from classpath properties.
  * @author Minh
@@ -25,6 +26,19 @@ public final class CampaignLoader {
      * @throws IllegalArgumentException if campaign or map data is invalid
      */
     public static List<Level> loadDefault() { return load("/levels.properties"); }
+
+    /**
+     * Loads the prebuilt map sequence for a chosen difficulty with no file editing required.
+     * @author Minh
+     * @param difficulty non-null menu selection
+     * @return immutable ordered level definitions
+     * @throws IllegalArgumentException if no difficulty was selected or its configuration is invalid
+     * @throws IllegalStateException if a bundled resource cannot be read
+     */
+    public static List<Level> load(Difficulty difficulty) {
+        if (difficulty == null) { throw new IllegalArgumentException("Choose a difficulty first."); }
+        return load(difficulty.resource());
+    }
 
     /**
      * Reads a manifest and loads each map; mutable NPCs are created when a level is entered.
