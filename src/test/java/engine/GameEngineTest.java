@@ -342,4 +342,77 @@ class GameEngineTest {
         assertTrue(engine.finished());
         assertEquals("You escaped!", feedback);
     }
+
+    /**
+     * Verifies that entering an unresolved NPC's location provides encounter
+     * feedback without automatically resolving the encounter.
+     */
+    @Test
+    void enteringNpcLocationProvidesEncounterFeedback() {
+        Npc npc = newNpc();
+        GameEngine engine = new GameEngine(newMaze(), List.of(npc));
+
+        String feedback = engine.move(Command.RIGHT);
+
+        assertEquals(new Position(2, 1), engine.player().position());
+        assertEquals(
+                "NPC encountered. Health: 6, Attack: 2. Choose fight or talk.",
+                feedback);
+        assertFalse(npc.resolved());
+    }
+
+    /**
+     * Verifies that movement onto an NPC does not automatically complete
+     * the encounter.
+     */
+    @Test
+    void npcEncounterDoesNotAutomaticallyCompleteInteraction() {
+        Npc npc = newNpc();
+        GameEngine engine = new GameEngine(newMaze(), List.of(npc));
+
+        engine.move(Command.RIGHT);
+
+        assertFalse(npc.resolved());
+        assertEquals(Player.MAX_HEALTH, engine.player().health());
+        assertTrue(engine.player().inventory().isEmpty());
+    }
+
+    /**
+     * Verifies that a resolved NPC does not trigger encounter feedback.
+     */
+    @Test
+    void resolvedNpcDoesNotTriggerEncounterFeedback() {
+        Npc npc = newNpc();
+        npc.resolve();
+
+        GameEngine engine = new GameEngine(newMaze(), List.of(npc));
+
+        String feedback = engine.move(Command.RIGHT);
+
+        assertEquals(new Position(2, 1), engine.player().position());
+        assertEquals("Movement successful.", feedback);
+    }
+
+    /**
+     * Verifies that NPC state is preserved after the player leaves and
+     * returns to the NPC's location.
+     */
+    @Test
+    void npcStatePersistsAfterLeavingAndReturning() {
+        Npc npc = newNpc();
+        npc.hit(2);
+
+        GameEngine engine = new GameEngine(newMaze(), List.of(npc));
+
+        engine.move(Command.RIGHT);
+        engine.move(Command.LEFT);
+        String feedback = engine.move(Command.RIGHT);
+
+        assertEquals(new Position(2, 1), engine.player().position());
+        assertEquals(4, npc.health());
+        assertFalse(npc.resolved());
+        assertEquals(
+                "NPC encountered. Health: 4, Attack: 2. Choose fight or talk.",
+                feedback);
+    }
 }
