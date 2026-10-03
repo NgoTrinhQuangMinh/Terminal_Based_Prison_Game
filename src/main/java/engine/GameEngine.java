@@ -207,6 +207,47 @@ public class GameEngine {
     }
 
     /**
+     * Offers the current active NPC's riddle.
+     *
+     * <p>Marks the riddle as offered and returns its text with answer instructions. Talking does not damage either participant or award items.</p>
+     *
+     * @author Minh
+     * @return the riddle and instructions, or feedback when no active NPC is present
+     */
+    private String talk() {
+        Npc npc = currentNpc();
+        if (npc == null) { return "There is no NPC here to talk to."; }
+        return "NPC: " + npc.offerRiddle() + "\nType answer <your answer>.";
+    }
+
+    /**
+     * Checks a proposed answer for the current NPC encounter.
+     *
+     * <p>Requires a current unresolved NPC and an already offered riddle. Blank and incorrect attempts award nothing. A correct answer resolves that NPC before granting its configured drops, without combat damage.</p>
+     *
+     * @author Minh
+     * @param attempt non-null answer text from command argument parsing
+     * @return feedback for an invalid target, missing question, unsuccessful attempt or successful resolution
+     */
+    private String answer(String attempt) {
+        Npc npc = currentNpc();
+        if (npc == null) {
+            return "There is no NPC here to answer.";
+        }
+        if (!npc.riddleOffered()) {
+            return "Talk to the NPC to hear its riddle first.";
+        }
+        if (attempt.isBlank()) {
+            return "Type answer <your answer>.";
+        }
+        if (!npc.accepts(attempt)) {
+            return "NPC: Incorrect. Try again, or choose to fight.";
+        }
+        npc.resolve();
+        return "NPC: Correct! " + awardDrops(npc);
+    }
+
+    /**
      * Performs one player-first combat exchange.
      *
      * <p>Requires an active NPC at the player location. A defeated NPC grants rewards and does not counterattack; a surviving NPC damages the player. Reports player death or the remaining combat stats without reading terminal input.</p>
