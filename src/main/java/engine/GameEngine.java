@@ -180,7 +180,7 @@ public class GameEngine {
         Npc npc = currentNpc();
         if (npc != null) {
             return "NPC encountered. Health: " + npc.health()
-                    + ", Attqack: " + npc.attack()
+                    + ", Attack: " + npc.attack()
                     + ". Choose fight or talk.";
         }
 
