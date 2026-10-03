@@ -22,3 +22,8 @@ tasks.test {
 application {
     mainClass.set("Main")
 }
+
+// Lets the game read the player's commands when started with `./gradlew run`.
+tasks.named<JavaExec>("run") {
+    standardInput = System.`in`
+}
