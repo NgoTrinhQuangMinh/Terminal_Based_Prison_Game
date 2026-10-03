@@ -231,12 +231,21 @@ public class GameEngine {
      */
     private String answer(String attempt) {
         Npc npc = currentNpc();
-        if (npc == null) { return "There is no NPC here to answer."; }
-        if (!npc.riddleOffered()) { return "Talk to the NPC to hear its riddle first."; }
-        if (attempt.isBlank()) { return "Type answer <your answer>."; }
-        if (!npc.accepts(attempt)) { return "NPC: Incorrect. Try again, or choose to fight."; }
+        if (npc == null) {
+            return "There is no NPC here to answer.";
+        }
+        if (!npc.riddleOffered()) {
+            return "Talk to the NPC to hear its riddle first.";
+        }
+        if (attempt.isBlank()) {
+            return "Type answer <your answer>.";
+        }
+        if (!npc.accepts(attempt)) {
+            return "NPC: Incorrect. Try again, or choose to fight.";
+        }
         npc.resolve();
         return "NPC: Correct! " + awardDrops(npc);
+    }
 
     /**
      * Performs one player-first combat exchange.
