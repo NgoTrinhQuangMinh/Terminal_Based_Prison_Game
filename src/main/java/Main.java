@@ -2,7 +2,7 @@ import config.MazeLoader;
 import config.NpcLoader;
 import engine.GameEngine;
 import model.Maze;
-import ui.ConsoleUI;
+import ui.GameLauncher;
 import ui.LineConsoleUI;
 import java.util.Arrays;
 
@@ -16,22 +16,22 @@ import java.util.Arrays;
 public class Main {
 
     /**
-     * Loads the default maze and NPCs and launches immediate terminal controls.
+     * Offers bundled difficulty choices before launching immediate terminal controls.
      *
      * <p>The optional {@code --line} argument selects the original line-based
-     * interface for scripted input and consoles without terminal support.</p>
+     * interface with the original Normal map for scripted input and consoles
+     * without terminal support.</p>
      *
      * @param args optional --line flag for line-based input
      * @author Minh
      */
     public static void main(String[] args) {
-        Maze maze = MazeLoader.loadDefault();
-        GameEngine engine = new GameEngine(maze, NpcLoader.loadDefault(maze));
-
         if (Arrays.asList(args).contains("--line")) {
+            Maze maze = MazeLoader.loadDefault();
+            GameEngine engine = new GameEngine(maze, NpcLoader.loadDefault(maze));
             new LineConsoleUI(engine, System.in, System.out).run();
         } else {
-            new ConsoleUI(engine).run();
+            GameLauncher.run();
         }
     }
 }

@@ -17,6 +17,7 @@ import model.Maze;
  * remain the responsibility of {@link Maze}.</p>
  *
  * @author Lia Huang
+ * @author Minh
  */
 public final class MazeLoader {
     private static final String DEFAULT_MAZE_RESOURCE = "/maze.txt";
@@ -34,17 +35,36 @@ public final class MazeLoader {
      * Maze constructor so the same validation rules are used for loaded maps
      * and maps created in tests.</p>
      *
+     * @author Minh
      * @return a new validated Maze built from {@code /maze.txt}
      * @throws IllegalStateException if the resource is missing or cannot be read
      * @throws IllegalArgumentException if the loaded map fails Maze validation
      */
     public static Maze loadDefault() {
+        return load(DEFAULT_MAZE_RESOURCE);
+    }
+
+    /**
+     * Loads a named bundled maze with the same validation as the default map.
+     *
+     * <p>Reads UTF-8 rows and closes the resource before returning. Validation
+     * stays in the Maze model; no player or encounter state is created here.</p>
+     * @author Minh
+     * @param resource absolute classpath path of a bundled map
+     * @return a fresh validated maze
+     * @throws IllegalArgumentException if the path or map contents are invalid
+     * @throws IllegalStateException if the resource is missing or unreadable
+     */
+    public static Maze load(String resource) {
+        if (resource == null || !resource.startsWith("/") || resource.isBlank()) {
+            throw new IllegalArgumentException("An absolute maze resource path is required.");
+        }
         InputStream stream =
-                MazeLoader.class.getResourceAsStream(DEFAULT_MAZE_RESOURCE);
+                MazeLoader.class.getResourceAsStream(resource);
 
         if (stream == null) {
             throw new IllegalStateException(
-                    "Missing maze.txt resource."
+                    "Missing maze resource: " + resource
             );
         }
 
@@ -65,7 +85,7 @@ public final class MazeLoader {
 
         } catch (IOException exception) {
             throw new IllegalStateException(
-                    "Could not read maze.txt.",
+                    "Could not read maze: " + resource,
                     exception
             );
         }
