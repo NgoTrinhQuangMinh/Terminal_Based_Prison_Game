@@ -2,7 +2,9 @@
 
 A Java 17 terminal RPG. Escape a prison by exploring a maze, fighting NPCs or
 solving their riddles, collecting items and reaching the exit with its key.
-Choose Easy, Normal or Hard before playing; each difficulty has one bundled map.
+Choose Easy, Normal or Hard before playing; each difficulty has a two-map campaign.
+Unlock the prison door to enter the courtyard, then unlock its exit to win.
+Each door consumes one key. Health, equipment and unused items carry forward.
 
 ## Play
 
@@ -61,6 +63,7 @@ verification logs are uploaded as workflow artifacts. See [ci/README.md](ci/READ
 
 - [Continuous UI](CONTINUOUS-UI.md)
 - [Difficulty selection](DIFFICULTY-SELECTION.md)
+- [Linked maps](LINKED-MAPS.md)
 - [Contributing](CONTRIBUTING.md)
 - [User stories](Activity-1-User-Stories.md)
 - [MIT license](LICENSE.md)

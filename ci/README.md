@@ -4,7 +4,8 @@ The pipeline runs build, test, then package. The package job builds the reposito
 Dockerfile (including its Gradle tests) and runs the resulting immutable image ID.
 It verifies the non-root user, a complete line-mode combat escape and full
 Easy/Normal/Hard riddle escapes through real pseudo-terminal input. Startup,
-difficulty labels, rewards, victory output and zero exit status are checked.
+difficulty labels, rewards, intermediate map transitions, final victory output
+and zero exit status are checked. Each playthrough completes both campaign maps.
 No image is published and no deployment occurs.
 
 ## Runner prerequisite
