@@ -92,7 +92,7 @@ public class GameControls {
         if (key.equalsIgnoreCase("i")) { inventoryVisible = !inventoryVisible; }
         if (!command.isEmpty()) {
             message = game.execute(command);
-                if (command.equals("talk") && game.canAnswerRiddle()) {
+            if (command.equals("talk") && game.canAnswerRiddle()) {
                 answering = true;
                 answer.setLength(0);
                 message = message.replace("\nType answer <your answer>.", "");

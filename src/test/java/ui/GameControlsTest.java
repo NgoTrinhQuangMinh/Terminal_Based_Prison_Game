@@ -2,15 +2,15 @@ package ui;
 
 import config.MazeLoader;
 import engine.GameEngine;
-import model.Player;
 import model.Inventory;
 import config.NpcLoader;
 import model.Position;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Verifies that immediate controls and answer typing stay separate. * @author Minh
-     */
+/** Verifies that immediate controls and answer typing stay separate.
+ * @author Minh
+ */
 class GameControlsTest {
     /** Creates an independent session with bundled NPCs for control tests.
      * @return fresh default game

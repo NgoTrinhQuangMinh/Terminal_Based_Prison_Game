@@ -1,175 +1,127 @@
 package ui;
 
-import org.junit.jupiter.api.Test;
-
+import config.MazeLoader;
+import config.NpcLoader;
+import engine.GameEngine;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-
-import engine.GameEngine;
 import model.Inventory;
-import model.Maze;
-import model.Npc;
 import model.Position;
+import org.jline.terminal.Size;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-/**
- * Tests the terminal input/output loop using scripted input.
- *
- * @author Xinran Tian
+/** Exercises immediate input and screen cleanup through deterministic terminals.
+ * @author Minh
  */
 class ConsoleUITest {
-
-    private static GameEngine newGame() {
-        Maze maze = new Maze(List.of(
-                "-------",
-                "|P1..X|",
-                "-------"
-        ));
-        Npc npc = new Npc(new Position(2, 1), 3, 2,
-                "What has hands but cannot clap?", "clock",
-                List.of(Inventory.KEY));
-        return new GameEngine(maze, List.of(npc));
-    }
-
-    /**
-     * Runs the UI with the given lines of input and returns everything printed.
-     *
-     * @param engine the game session to play
-     * @param lines the commands typed by the player
-     * @return the text printed by the UI
+    /** Creates an independent game with the bundled map and NPC definitions.
+     * @author Minh
+     * @return fresh game for each input script
      */
-    private static String play(GameEngine engine, String... lines) {
-        String script = lines.length == 0 ? "" : String.join("\n", lines) + "\n";
-        ByteArrayOutputStream captured = new ByteArrayOutputStream();
-
-        new ConsoleUI(engine,
-                new ByteArrayInputStream(script.getBytes(StandardCharsets.UTF_8)),
-                new PrintStream(captured, true, StandardCharsets.UTF_8)).run();
-
-        return captured.toString(StandardCharsets.UTF_8);
+    private GameEngine newGame() {
+        var maze = MazeLoader.loadDefault();
+        return new GameEngine(maze, NpcLoader.loadDefault(maze));
     }
 
-    /**
-     * Verifies that the introduction and starting map are shown.
+    /** Runs a finite key script and verifies restoration of terminal input flags.
+     * @author Minh
+     * @param game session receiving key input
+     * @param input characters and terminal escape sequences to consume
+     * @param width terminal columns
+     * @param height terminal rows
+     * @return all terminal output including screen-control sequences
+     * @throws Exception if terminal setup or execution fails
+     */
+    private String play(GameEngine game, String input, int width, int height) throws Exception {
+        var output = new ByteArrayOutputStream();
+        try (var terminal = TestTerminal.create(
+                new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)), output)) {
+            terminal.setSize(new Size(width, height));
+            var original = terminal.getAttributes();
+            new ConsoleUI(game).run(terminal);
+            assertEquals(original.getLocalFlags(), terminal.getAttributes().getLocalFlags());
+            assertEquals(original.getInputFlags(), terminal.getAttributes().getInputFlags());
+        }
+        return output.toString(StandardCharsets.UTF_8);
+    }
+
+    /** Verifies real arrow sequences, answer submission, inventory and clean quit.
+     * @author Minh
+     * @throws Exception if virtual terminal execution fails
      */
     @Test
-    void showsIntroductionAndStartingState() {
-        GameEngine engine = newGame();
-
-        String output = play(engine);
-
+    void solvesRiddleThroughTerminalKeys() throws Exception {
+        GameEngine game = newGame();
+        String output = play(game, "\u001b[C\u001b[C\u001b[B\u001b[Bdddtclock\riq", 100, 35);
+        assertTrue(game.player().inventory().has(Inventory.KEY));
+        assertTrue(game.finished());
         assertTrue(output.contains(ConsoleUI.TITLE));
-        assertTrue(output.contains(GameEngine.OBJECTIVE_TEXT));
-        assertTrue(output.contains(GameEngine.HELP_TEXT));
-        assertTrue(output.contains("|@N..X|"));
-        assertTrue(output.contains("Health: 10/10"));
+        assertTrue(output.contains("Exit key"));
+        assertTrue(output.contains("\u001b[?1049l"), "Alternate screen must be left");
+        assertTrue(output.contains("\u001b[?25h"), "Cursor must be restored");
     }
 
-    /**
-     * Verifies that each command's feedback and the updated map are shown.
+    /** Verifies the full combat escape route and the final feedback screen.
+     * @author Minh
+     * @throws Exception if virtual terminal execution fails
      */
     @Test
-    void showsFeedbackAndUpdatedStateAfterEachCommand() {
-        GameEngine engine = newGame();
-
-        String output = play(engine, "inventory", "right");
-
-        assertTrue(output.contains("Inventory: empty"));
-        assertTrue(output.contains("|.@..X|"));
-        assertEquals(new Position(2, 1), engine.player().position());
-    }
-
-    /**
-     * Verifies that the loop ends without error when the input runs out.
-     */
-    @Test
-    void stopsWhenInputEnds() {
-        GameEngine engine = newGame();
-
-        String output = play(engine, "right");
-
-        assertFalse(engine.finished());
-        assertTrue(output.contains("Thanks for playing."));
-    }
-
-    /**
-     * Verifies that commands after quitting are not run.
-     */
-    @Test
-    void stopsReadingAfterQuit() {
-        GameEngine engine = newGame();
-
-        play(engine, "quit", "right", "right");
-
-        assertTrue(engine.finished());
-        assertEquals(new Position(1, 1), engine.player().position());
-    }
-
-    /**
-     * Verifies that a winning playthrough ends with the winning message.
-     */
-    @Test
-    void winningPlaythroughShowsWinningMessage() {
-        GameEngine engine = newGame();
-
-        String output = play(engine, "d", "fight", "d", "d", "d");
-
-        assertTrue(engine.won());
+    void combatRouteWins() throws Exception {
+        GameEngine game = newGame();
+        String output = play(game, "ddssdddffdddww ", 100, 35);
+        assertTrue(game.won());
         assertTrue(output.contains("You escaped!"));
-        assertTrue(output.contains("Congratulations, you escaped the prison!"));
+        assertTrue(output.contains("Game ended."));
     }
 
-    /**
-     * Verifies that losing all health ends with the defeat message.
+    /** Verifies EOF returns without manufacturing a win or quit command.
+     * @author Minh
+     * @throws Exception if virtual terminal execution fails
      */
     @Test
-    void defeatShowsDefeatMessage() {
-        Maze maze = new Maze(List.of(
-                "-----",
-                "|P1X|",
-                "-----"
-        ));
-        Npc strongNpc = new Npc(new Position(2, 1), 50, 10, "Riddle?",
-                "answer", List.of(Inventory.HERB));
-        GameEngine engine = new GameEngine(maze, List.of(strongNpc));
-
-        String output = play(engine, "d", "fight", "fight");
-
-        assertTrue(engine.finished());
-        assertFalse(engine.won());
-        assertTrue(output.contains("You were defeated."));
+    void eofRestoresTerminal() throws Exception {
+        GameEngine game = newGame();
+        play(game, "d", 100, 35);
+        assertEquals(new Position(2, 1), game.player().position());
+        assertFalse(game.finished());
     }
 
-    /**
-     * Verifies that unknown input is reported and the game continues.
+    /** Verifies an undersized screen blocks movement but keeps quit available.
+     * @author Minh
+     * @throws Exception if virtual terminal execution fails
      */
     @Test
-    void unknownInputIsReportedAndGameContinues() {
-        GameEngine engine = newGame();
-
-        String output = play(engine, "dance", "right");
-
-        assertTrue(output.contains("Unknown command."));
-        assertEquals(new Position(2, 1), engine.player().position());
+    void smallTerminalShowsResizePromptAndAllowsQuit() throws Exception {
+        GameEngine game = newGame();
+        String output = play(game, "dq", 65, 20);
+        assertEquals(new Position(1, 1), game.player().position());
+        assertTrue(game.finished());
+        assertTrue(output.contains("Resize terminal"));
     }
 
-    /**
-     * Verifies that missing arguments are rejected.
+    /** Verifies raw attributes and screen state are restored if rendering fails.
+     * @author Minh
+     * @throws Exception if virtual terminal setup fails
      */
     @Test
-    void nullArgumentsAreRejected() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new ConsoleUI(null, System.in, System.out));
-        assertThrows(IllegalArgumentException.class,
-                () -> new ConsoleUI(newGame(), null, System.out));
-        assertThrows(IllegalArgumentException.class,
-                () -> new ConsoleUI(newGame(), System.in, null));
+    void renderingFailureRestoresTerminal() throws Exception {
+        GameEngine game = new GameEngine(MazeLoader.loadDefault()) {
+            /** Simulates an unexpected rendering failure inside the terminal loop.
+             * @author Minh
+             * @return never returns because this fixture always throws
+             */
+            @Override
+            public String render() { throw new IllegalStateException("render failed"); }
+        };
+        var output = new ByteArrayOutputStream();
+        try (var terminal = TestTerminal.create(new ByteArrayInputStream(new byte[0]), output)) {
+            terminal.setSize(new Size(100, 35));
+            var original = terminal.getAttributes();
+            assertThrows(IllegalStateException.class, () -> new ConsoleUI(game).run(terminal));
+            assertEquals(original.getLocalFlags(), terminal.getAttributes().getLocalFlags());
+            assertTrue(output.toString(StandardCharsets.UTF_8).contains("\u001b[?1049l"));
+        }
     }
 }
