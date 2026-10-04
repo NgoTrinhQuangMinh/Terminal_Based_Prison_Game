@@ -13,19 +13,22 @@ The descriptions appear in the menu and the selected name stays in the game
 header. Unsupported keys show guidance and keep the menu open. Q, Escape,
 Ctrl+C, Ctrl+D or end-of-input cancel before a game session is created.
 
-Each selection starts **one map**, with matching NPC stats, riddles and rewards.
-Win by collecting its exit key through combat or a riddle and reaching the exit.
+Each selection starts a **two-map campaign**, with matching NPC stats, riddles and rewards.
+Collect a key through combat or a riddle, unlock the prison door, and continue
+into the courtyard. Unlock the courtyard exit to win. Each door consumes one key;
+health, equipment and other inventory carry forward.
 All choices are bundled; no custom files or map editing are needed. Difficulty
-cannot change during a session. Linked-map progression is outside issue #44.
+cannot change during a session. See [LINKED-MAPS.md](LINKED-MAPS.md) for progression.
 
-`--line` retains the original Normal map and scripted command interface without
-a menu, preserving existing automation and the automatic tester.
+`--line` starts the Normal campaign with scripted command input and no menu.
+Scripts must complete both maps before expecting victory.
 
 ## Implementation
 
-`Difficulty` identifies each map/NPC resource pair. `DifficultyLoader` loads both
-through `MazeLoader` and `NpcLoader` and constructs a fresh engine. Normal uses
-the original resources; Easy and Hard live in `src/main/resources/difficulty`.
+`Difficulty` identifies each campaign manifest. `DifficultyLoader` uses
+`CampaignLoader` to read ordered maps and constructs a fresh campaign engine.
+Normal starts with the original resources; Easy and Hard start with their
+existing difficulty maps. All campaigns finish at the courtyard.
 The loaders report missing or invalid resources rather than substituting Normal.
 
 `GameLauncher` shares a single JLine terminal between `DifficultyMenu` and

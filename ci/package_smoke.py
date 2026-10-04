@@ -119,6 +119,13 @@ def continuous(image, choice, label, resource, answer):
                 os.write(master, (answer + "\r").encode())
                 expect("Correct!")
                 os.write(master, route(resource, "1", "X").encode())
+                expect("Entered level")
+                courtyard = "src/main/resources/levels/courtyard.txt"
+                os.write(master, (route(courtyard, "P", "1") + "t").encode())
+                expect("Answer:")
+                os.write(master, b"piano\r")
+                expect("Correct!")
+                os.write(master, route(courtyard, "1", "X").encode())
                 expect("Game ended.")
                 os.write(master, b" ")
                 expect("You escaped!")
@@ -152,9 +159,10 @@ def main():
         if not uid.isdigit() or int(uid) == 0:
             raise AssertionError(f"Expected non-root runtime user, got {uid!r}")
     with container_name("line") as name:
-        commands = "\n".join(list("ddssddd") + ["fight", "fight"] + list("dddww")) + "\n"
+        commands = "\n".join(list("ddssddd") + ["fight", "fight"] + list("dddww")
+                             + list("ddd") + ["fight", "fight"] + list("ddd")) + "\n"
         output = command(docker_run(name) + ["-i", image, "--line"], "line-combat", commands)
-        for expected in ["You defeat the NPC", "Drops collected:", "You escaped!", "Congratulations"]:
+        for expected in ["You defeat the NPC", "Drops collected:", "Entered level 2/2", "You escaped!", "Congratulations"]:
             if expected not in output:
                 raise AssertionError(f"Line playthrough did not report {expected!r}")
     resources = "src/main/resources/"

@@ -48,7 +48,7 @@ during play. Containers launched with `--rm` are removed when they exit.
 
 ## Scripted line mode
 
-The original Normal map remains available without a terminal UI:
+The Normal campaign is available with line-based input:
 
 ```sh
 docker run --rm -i terminal-prison-game:local --line

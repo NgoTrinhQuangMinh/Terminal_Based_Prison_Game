@@ -2,7 +2,7 @@
 
 The default interface first offers Easy, Normal and Hard, then updates one terminal
 screen and handles keys without Enter. Press 1/2/3 to select, Enter for Normal,
-or Q/Escape/Ctrl+C/Ctrl+D to cancel. Each difficulty is a bundled single map.
+or Q/Escape/Ctrl+C/Ctrl+D to cancel. Each difficulty is a bundled two-map campaign.
 Gameplay still uses `GameEngine.execute()`; the automatic tester is unchanged.
 
 ## Run
@@ -44,8 +44,8 @@ when the loop ends, including when a gameplay or rendering exception occurs.
 ## Line-based compatibility
 
 Use `./gradlew run --args="--line" --console=plain` for the original line-based
-interface, including IDE consoles and redirected command scripts. This mode retains the
-original Normal map and does not show the difficulty menu. Continuous
+interface, including IDE consoles and redirected command scripts. This mode starts the
+Normal campaign and does not show the difficulty menu. Continuous
 mode should be launched from the installed distribution, not Gradle's input pipe.
 
 ## Verification
@@ -55,5 +55,5 @@ input isolation and quit behaviour. Stream-backed xterm tests cover the key loop
 combat victory, riddle rewards, EOF, undersized terminals and error cleanup.
 Existing line-interface tests remain in `LineConsoleUITest`.
 
-Difficulty selection (#44) chooses one map per game. Linked-map campaigns and
-Docker packaging remain separate features. See DIFFICULTY-SELECTION.md for details.
+Difficulty selection chooses a two-map campaign. Linked maps and
+Docker packaging work with the same UI. See LINKED-MAPS.md and DIFFICULTY-SELECTION.md.

@@ -1,6 +1,6 @@
 package model;
 
-/** Ready-to-play single-map choices with their matching encounter resources.
+/** Ready-to-play campaigns with matching maps and encounter resources.
  * @author Minh
  */
 public enum Difficulty {
@@ -50,4 +50,12 @@ public enum Difficulty {
      * @return absolute NPC resource path
      */
     public String npcResource() { return npcResource; }
+
+    /** Identifies the ordered campaign selected by this difficulty.
+     * @author Minh
+     * @return absolute classpath manifest path
+     */
+    public String campaignResource() {
+        return "/difficulty/" + name().toLowerCase(java.util.Locale.ROOT) + "/levels.properties";
+    }
 }

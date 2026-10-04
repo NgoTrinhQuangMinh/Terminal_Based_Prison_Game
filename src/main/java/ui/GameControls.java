@@ -62,12 +62,21 @@ public class GameControls {
     /**
      * Processes one character or named control key.
      *
-     * <p>Ignores input after the game ends. Quit control characters work in either input mode; other keys are routed to answer editing while a riddle is active. In normal mode, translates movement, encounter and item shortcuts, toggles inventory visibility, and enters answer mode after a successful talk action.</p>
+     * <p>Clears stale answer input if its encounter is no longer active, including
+     * after an external level transition. Ignores input after the game ends.
+     * Quit control characters work in either input mode; other keys are routed to
+     * answer editing while a riddle is active. In normal mode, translates movement,
+     * encounter and item shortcuts, toggles inventory visibility, and enters answer
+     * mode after a successful talk action.</p>
      *
      * @param key non-null input character, control character, or named arrow key such as UP
      * @author Minh
      */
     public void handle(String key) {
+        if (answering && !game.canAnswerRiddle()) {
+            answering = false;
+            answer.setLength(0);
+        }
         if (game.finished()) { return; }
         if (key.equals("\u0003") || key.equals("\u0004")) {
             message = game.execute("quit");

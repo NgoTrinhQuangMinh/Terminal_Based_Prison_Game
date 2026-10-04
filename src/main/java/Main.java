@@ -1,7 +1,6 @@
-import config.MazeLoader;
-import config.NpcLoader;
+import config.DifficultyLoader;
 import engine.GameEngine;
-import model.Maze;
+import model.Difficulty;
 import ui.GameLauncher;
 import ui.LineConsoleUI;
 import java.util.Arrays;
@@ -19,7 +18,7 @@ public class Main {
      * Offers bundled difficulty choices before launching immediate terminal controls.
      *
      * <p>The optional {@code --line} argument selects the original line-based
-     * interface with the original Normal map for scripted input and consoles
+     * interface with the Normal campaign for scripted input and consoles
      * without terminal support.</p>
      *
      * @param args optional --line flag for line-based input
@@ -27,8 +26,7 @@ public class Main {
      */
     public static void main(String[] args) {
         if (Arrays.asList(args).contains("--line")) {
-            Maze maze = MazeLoader.loadDefault();
-            GameEngine engine = new GameEngine(maze, NpcLoader.loadDefault(maze));
+            GameEngine engine = DifficultyLoader.load(Difficulty.NORMAL);
             new LineConsoleUI(engine, System.in, System.out).run();
         } else {
             GameLauncher.run();
