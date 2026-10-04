@@ -1,0 +1,8 @@
+services:
+  game:
+    build: .
+    image: maze-escape:local
+    stdin_open: true
+    tty: true
+    environment:
+      TERM: xterm-256color
