@@ -14,7 +14,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 10001 game
 WORKDIR /app
-COPY --from=build --chown=game:game /workspace/build/install/comp2120-wed10_a3_u7842952_u7922002_u7986490_u8001214/ ./
+COPY --from=build --chown=game:game /workspace/build/install/prison-game/ ./
 ENV TERM=xterm-256color
 USER game
-ENTRYPOINT ["/app/bin/comp2120-wed10_a3_u7842952_u7922002_u7986490_u8001214"]
+ENTRYPOINT ["/app/bin/prison-game"]

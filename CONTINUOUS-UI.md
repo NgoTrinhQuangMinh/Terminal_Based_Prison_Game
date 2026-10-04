@@ -14,7 +14,7 @@ and launches it directly so JLine can access the terminal.
 On Linux/macOS, run `./gradlew installDist`, then:
 
 ```sh
-./build/install/comp2120-wed10_a3_u7842952_u7922002_u7986490_u8001214/bin/comp2120-wed10_a3_u7842952_u7922002_u7986490_u8001214
+./build/install/prison-game/bin/prison-game
 ```
 
 Use a terminal at least 70 columns by 24 rows (100 by 35 recommended).
