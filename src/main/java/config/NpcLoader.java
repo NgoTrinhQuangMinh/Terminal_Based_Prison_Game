@@ -38,8 +38,27 @@ public final class NpcLoader {
      * @throws IllegalArgumentException if required values, numeric stats, rewards or NPC model data are invalid
      */
     public static List<Npc> loadDefault(Maze maze) {
-        var stream = NpcLoader.class.getResourceAsStream("/npcs.properties");
-        if (stream == null) { throw new IllegalStateException("Missing npcs.properties."); }
+        return load(maze, "/npcs.properties");
+    }
+
+    /**
+     * Creates fresh encounters from a selected bundled NPC resource.
+     *
+     * <p>Uses the supplied maze markers and existing property validation and
+     * reward names. Each call returns independent NPC state and closes its reader.</p>
+     * @author Minh
+     * @param maze validated map whose numbered markers identify encounters
+     * @param resource absolute classpath path of NPC properties
+     * @return new NPCs in maze scan order
+     * @throws IllegalArgumentException if arguments or required properties are invalid
+     * @throws IllegalStateException if the resource is missing or unreadable
+     */
+    public static List<Npc> load(Maze maze, String resource) {
+        if (maze == null || resource == null || !resource.startsWith("/") || resource.isBlank()) {
+            throw new IllegalArgumentException("A maze and absolute NPC resource path are required.");
+        }
+        var stream = NpcLoader.class.getResourceAsStream(resource);
+        if (stream == null) { throw new IllegalStateException("Missing NPC resource: " + resource); }
         Properties config = new Properties();
         try (var reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
             config.load(reader);
