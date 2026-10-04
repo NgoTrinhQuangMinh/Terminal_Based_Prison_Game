@@ -21,6 +21,7 @@ public class ConsoleUI {
     /** Title displayed above the persistent game screen. */
     public static final String TITLE = "MAZE ESCAPE";
 
+    private final String difficultyLabel;
     private final GameEngine game;
     private final GameControls controls;
 
@@ -33,7 +34,22 @@ public class ConsoleUI {
      * @author Minh
      */
     public ConsoleUI(GameEngine game) {
+        this(game, "");
+    }
+
+    /**
+     * Creates an interface that identifies the selected difficulty on every frame.
+     *
+     * <p>The label is presentation metadata only. All rules and encounter stats
+     * come from the supplied session; constructing the UI does not read input.</p>
+     * @author Minh
+     * @param game selected game session, which must not be null
+     * @param difficultyLabel display label, or an empty string for an unnamed game
+     * @throws NullPointerException if the game or label is null
+     */
+    public ConsoleUI(GameEngine game, String difficultyLabel) {
         this.game = java.util.Objects.requireNonNull(game, "game");
+        this.difficultyLabel = java.util.Objects.requireNonNull(difficultyLabel, "difficultyLabel");
         controls = new GameControls(game);
     }
 
@@ -154,7 +170,7 @@ public class ConsoleUI {
             lines.add(new AttributedString("Current size: " + width + " x " + height + ". Press a key to refresh."));
             lines.add(new AttributedString("Ctrl+C quits; Escape cancels riddle input."));
         } else {
-            lines.add(new AttributedString(TITLE, AttributedStyle.BOLD.foreground(AttributedStyle.CYAN)));
+            lines.add(new AttributedString(TITLE + (difficultyLabel.isEmpty() ? "" : " - " + difficultyLabel), AttributedStyle.BOLD.foreground(AttributedStyle.CYAN)));
             lines.add(new AttributedString("-".repeat(Math.min(width - 1, 78))));
             for (String row : game.render().split("\n")) {
                 lines.add(new AttributedString(row));
