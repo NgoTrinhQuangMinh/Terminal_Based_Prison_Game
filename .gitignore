@@ -42,3 +42,7 @@ bin/
 .DS_Store
 
 .idea
+
+# Container verification output and Python caches
+package-logs/
+__pycache__/

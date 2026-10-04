@@ -24,6 +24,7 @@ tasks.test {
 
 application {
     mainClass.set("Main")
+    applicationName = "prison-game"
 }
 
 // Lets the game read the player's commands when started with `./gradlew run`.

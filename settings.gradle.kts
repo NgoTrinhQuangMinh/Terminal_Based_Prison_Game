@@ -1,2 +1,2 @@
-rootProject.name = "comp2120-wed10_a3_u7842952_u7922002_u7986490_u8001214"
+rootProject.name = "Terminal_Based_Prison_Game"
 

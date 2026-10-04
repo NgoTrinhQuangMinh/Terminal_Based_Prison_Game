@@ -23,8 +23,8 @@ riddle, then reach the exit to win. Progress is not saved after exit.
 ## Without Compose
 
 ```sh
-docker build -t maze-escape-wed:local .
-docker run --rm -it maze-escape-wed:local
+docker build -t terminal-prison-game:local .
+docker run --rm -it terminal-prison-game:local
 ```
 
 Keep **both `-i` and `-t`**: the continuous UI needs input and a terminal. Run in a
@@ -51,7 +51,7 @@ during play. Containers launched with `--rm` are removed when they exit.
 The original Normal map remains available without a terminal UI:
 
 ```sh
-docker run --rm -i maze-escape-wed:local --line
+docker run --rm -i terminal-prison-game:local --line
 ```
 
 Supply line-based commands on standard input. Omit `-t` for piped scripts.

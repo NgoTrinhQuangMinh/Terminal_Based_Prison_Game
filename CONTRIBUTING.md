@@ -83,7 +83,7 @@ Contains configuration-loading logic.
 For example:
 
 ```text
-maze.properties / npcs.properties
+maze.txt / npcs.properties
             ↓
 MazeLoader / NpcLoader
             ↓
@@ -143,7 +143,7 @@ Contains configuration and data files.
 Example:
 
 ```text
-src/main/resources/maze.properties
+src/main/resources/maze.txt
 src/main/resources/npcs.properties
 ```
 
@@ -187,7 +187,7 @@ Branch
        ↓
 Commits
        ↓
-Merge Request
+Pull Request
        ↓
 Review
        ↓
@@ -206,7 +206,7 @@ Close Issue
 
 # 3. Work Items and Issues
 
-GitLab Work Items are used to track project work.
+GitHub Issues are used to track project work.
 
 For this project, most development work should be represented by an **Issue**.
 
@@ -347,7 +347,7 @@ Responsible for:
 - creating the branch,
 - writing commits,
 - adding/updating tests,
-- opening the Merge Request,
+- opening the Pull Request,
 - responding to review comments.
 
 ## Reviewer
@@ -454,7 +454,7 @@ Implementation is ready for review.
 
 Requirements:
 
-- Merge Request exists,
+- Pull Request exists,
 - issue is linked,
 - relevant tests exist,
 - implementation is ready to inspect.
@@ -595,7 +595,7 @@ bugfix/41-invalid-room-movement
 
 test/52-game-engine-tests
 
-infra/60-gitlab-ci
+infra/60-GitHub-ci
 ```
 
 Before starting:
@@ -662,9 +662,9 @@ Do not wait until an entire feature is complete before creating one very large c
 
 ---
 
-# 13. Merge Requests
+# 13. Pull Requests
 
-All normal development branches should be merged into `main` using a Merge Request.
+All normal development branches should be merged into `main` using a Pull Request.
 
 Recommended title:
 
@@ -709,7 +709,7 @@ Using:
 Closes #21
 ```
 
-links the MR to the issue and allows GitLab to close the issue after the MR is merged.
+links the PR to the issue and allows GitHub to close the issue after the PR is merged.
 
 ---
 
@@ -749,12 +749,12 @@ Implementer updates branch
       ↓
 New commit is pushed
       ↓
-Merge Request updates automatically
+Pull Request updates automatically
       ↓
 Reviewer checks again
 ```
 
-Do not open a new MR simply because review changes were requested.
+Do not open a new PR simply because review changes were requested.
 
 ---
 
@@ -820,7 +820,7 @@ status::in-progress
 
 # 16. CI/CD
 
-The GitLab pipeline should automatically check the project.
+The GitHub Actions workflow should automatically check the project.
 
 At minimum:
 
@@ -842,11 +842,13 @@ test
 package
 ```
 
-Docker validation may be added later if useful.
+The workflow in `.github/workflows/ci.yml` runs build, test and package jobs.
+The package job builds the Docker image and verifies packaged gameplay using
+the Docker engine provided by the GitHub-hosted Ubuntu runner.
 
 A failed pipeline must be investigated.
 
-Do not merge an MR while required CI checks are failing.
+Do not merge an PR while required CI checks are failing.
 
 Do not modify a correct test simply to make the pipeline pass.
 
@@ -868,7 +870,7 @@ architecture decisions
 blockers
 ```
 
-Use **Merge Request discussions** for:
+Use **Pull Request discussions** for:
 
 ```text
 implementation
@@ -879,7 +881,7 @@ requested code changes
 
 Team chat can still be used for quick communication.
 
-However, if a decision affects the project, summarise it in GitLab.
+However, if a decision affects the project, summarise it in GitHub.
 
 Example:
 
@@ -982,7 +984,7 @@ Bob then verifies the acceptance criteria.
 When CI/CD passes and verification is complete:
 
 ```text
-Merge Request → main
+Pull Request → main
 ```
 
 Then:
@@ -1007,4 +1009,4 @@ WHICH issue required it?
 WHEN was it integrated?
 ```
 
-If the GitLab history answers those questions clearly, the project workflow is working correctly.
+If the GitHub history answers those questions clearly, the project workflow is working correctly.

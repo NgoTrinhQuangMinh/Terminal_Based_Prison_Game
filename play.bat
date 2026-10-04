@@ -1,10 +1,18 @@
 @echo off
 setlocal
 pushd "%~dp0"
-call gradlew.bat installDist --console=plain
+if errorlevel 1 exit /b 1
+call gradlew.bat installDist --console=plain --quiet
 if errorlevel 1 (
     popd
     exit /b 1
 )
-call "build\install\comp2120-wed10_a3_u7842952_u7922002_u7986490_u8001214\bin\comp2120-wed10_a3_u7842952_u7922002_u7986490_u8001214.bat"
+if not exist "build\install\prison-game\bin\prison-game.bat" (
+    echo The game launcher was not created by Gradle. 1>&2
+    popd
+    exit /b 1
+)
+call "build\install\prison-game\bin\prison-game.bat" %*
+set "gameExitCode=%errorlevel%"
 popd
+exit /b %gameExitCode%
