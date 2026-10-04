@@ -42,7 +42,7 @@ class DifficultyMenuTest {
         assertEquals(Difficulty.EASY, select("x91"));
     }
 
-    /** Verifies cancellation shortcuts and end-of-input never select a map set.
+    /** Verifies cancellation shortcuts and end-of-input never select a map.
      * @author Minh
      * @throws Exception if virtual terminal setup or reading fails
      */
@@ -52,7 +52,7 @@ class DifficultyMenuTest {
         }
     }
 
-    /** Verifies buffered gameplay keys survive the menu and use the chosen campaign.
+    /** Verifies buffered gameplay keys survive the menu and use the chosen map.
      * @author Minh
      * @throws Exception if virtual terminal setup or execution fails
      */
@@ -65,7 +65,8 @@ class DifficultyMenuTest {
                 GameEngine game = GameLauncher.run(terminal);
                 assertNotNull(game); assertTrue(game.finished()); assertFalse(game.won());
                 assertEquals(2, game.player().position().x());
-                assertTrue(game.levelName().startsWith(Difficulty.values()[choice - 1].label()));
+                assertEquals(config.MazeLoader.load(Difficulty.values()[choice - 1].mazeResource()).width(), game.maze().width());
+                assertTrue(output.toString(StandardCharsets.UTF_8).contains("MAZE ESCAPE - " + Difficulty.values()[choice - 1].label()));
                 assertEquals(before.getLocalFlags(), terminal.getAttributes().getLocalFlags());
             }
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("CHOOSE DIFFICULTY"));
@@ -82,6 +83,6 @@ class DifficultyMenuTest {
             assertNull(GameLauncher.run(terminal));
         }
         assertTrue(output.toString(StandardCharsets.UTF_8).contains("Goodbye."));
-        assertFalse(output.toString(StandardCharsets.UTF_8).contains("@ You"));
+        assertFalse(output.toString(StandardCharsets.UTF_8).contains("WASD / Arrows"));
     }
 }

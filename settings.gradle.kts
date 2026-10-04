@@ -1,2 +1,2 @@
-rootProject.name = "comp2120_Asm3_test"
+rootProject.name = "comp2120-wed10_a3_u7842952_u7922002_u7986490_u8001214"
 

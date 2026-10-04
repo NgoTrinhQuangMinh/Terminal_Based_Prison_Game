@@ -8,14 +8,20 @@ import java.util.List;
 import java.util.Properties;
 import model.Maze;
 import model.Npc;
-import model.Player;
+import model.Inventory;
 
-/** Loads NPC stats, riddles, answers and drops from a properties file. */
+/**
+ * Loads NPC stats, riddles, answers and drops from a properties file.
+ *
+ * @author Minh
+ */
 public final class NpcLoader {
     /**
      * Prevents construction of the NPC-loading utility.
      *
      * <p>NPC creation is accessed through the static configuration-loading method.</p>
+     *
+     * @author Minh
      */
     private NpcLoader() { }
 
@@ -24,6 +30,8 @@ public final class NpcLoader {
      *
      * <p>Reads /npcs.properties as UTF-8, uses npc.&lt;marker&gt; properties, and maps herb, weapon and key reward tokens to stored item names. Repeated drops are retained. Each call creates new encounter state and closes its resource reader.</p>
      *
+     *
+     * @author Minh
      * @param maze validated maze supplying the NPC markers and their coordinates
      * @return NPCs in the maze marker scan order
      * @throws IllegalStateException if the configuration resource is missing or cannot be read
@@ -34,17 +42,23 @@ public final class NpcLoader {
     }
 
     /**
-     * Creates fresh encounters from the specified level's UTF-8 configuration.
+     * Creates fresh encounters from a selected bundled NPC resource.
+     *
+     * <p>Uses the supplied maze markers and existing property validation and
+     * reward names. Each call returns independent NPC state and closes its reader.</p>
      * @author Minh
-     * @param maze map supplying NPC markers and coordinates
-     * @param resource absolute classpath NPC properties path
-     * @return fresh NPCs in marker scan order
+     * @param maze validated map whose numbered markers identify encounters
+     * @param resource absolute classpath path of NPC properties
+     * @return new NPCs in maze scan order
+     * @throws IllegalArgumentException if arguments or required properties are invalid
      * @throws IllegalStateException if the resource is missing or unreadable
-     * @throws IllegalArgumentException if required NPC properties are invalid
      */
     public static List<Npc> load(Maze maze, String resource) {
+        if (maze == null || resource == null || !resource.startsWith("/") || resource.isBlank()) {
+            throw new IllegalArgumentException("A maze and absolute NPC resource path are required.");
+        }
         var stream = NpcLoader.class.getResourceAsStream(resource);
-        if (stream == null) { throw new IllegalStateException("Missing NPC configuration: " + resource); }
+        if (stream == null) { throw new IllegalStateException("Missing NPC resource: " + resource); }
         Properties config = new Properties();
         try (var reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
             config.load(reader);
@@ -57,9 +71,9 @@ public final class NpcLoader {
             List<String> drops = new ArrayList<>();
             for (String drop : required(config, prefix + "drops").split(",", -1)) {
                 drops.add(switch (drop.trim()) {
-                    case "herb" -> Player.HERB;
-                    case "weapon" -> Player.WEAPON;
-                    case "key" -> Player.KEY;
+                    case "herb" -> Inventory.HERB;
+                    case "weapon" -> Inventory.WEAPON;
+                    case "key" -> Inventory.KEY;
                     default -> throw new IllegalArgumentException("Unknown drop: " + drop);
                 });
             }
@@ -77,6 +91,8 @@ public final class NpcLoader {
      *
      * <p>Trims surrounding whitespace after checking that the property is present and contains non-whitespace text. The supplied Properties object is not modified.</p>
      *
+     *
+     * @author Minh
      * @param config properties loaded from the NPC configuration
      * @param key required property name
      * @return the trimmed property value

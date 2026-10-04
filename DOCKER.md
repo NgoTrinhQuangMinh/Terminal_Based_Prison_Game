@@ -1,7 +1,7 @@
-# Run Maze Escape with Docker
+# Run Maze Escape with Docker (#42)
 
 This is an interactive terminal game, not a web application. No ports are needed.
-The image includes the difficulty menu and all Easy, Normal and Hard map sets.
+The image includes the difficulty menu and all Easy, Normal and Hard maps.
 
 ## Start the game
 
@@ -17,14 +17,14 @@ will ask you to resize if necessary. Choose **1 / 2 / 3** for Easy / Normal / Ha
 **Enter** for Normal, or **Q** to cancel. Gameplay uses WASD or arrow keys; the
 on-screen controls explain combat, riddles, equipment and inventory.
 
-Each exit consumes one key and leads to the next map. Health, equipment and other
-items carry over. Escaping the last map wins. Progress is not saved after exit.
+Each difficulty starts one bundled map. Collect its key through combat or a
+riddle, then reach the exit to win. Progress is not saved after exit.
 
 ## Without Compose
 
 ```sh
-docker build -t maze-escape:local .
-docker run --rm -it maze-escape:local
+docker build -t maze-escape-wed:local .
+docker run --rm -it maze-escape-wed:local
 ```
 
 Keep **both `-i` and `-t`**: the continuous UI needs input and a terminal. Run in a
@@ -34,7 +34,8 @@ above rather than `up -d`, which starts a detached session with no playable inpu
 ## Build details
 
 - The build stage uses Java 17 and the project's Gradle wrapper.
-- Every image build runs the unit/integration tests and creates the application distribution.
+- The build stage runs unit/integration tests before packaging the application.
+  Docker may reuse a previously successful layer when the build inputs are unchanged.
 - The runtime contains Java 17, terminal capability support and the built application.
 - The application runs as an unprivileged user.
 - The build context excludes Git history, local build output and planning documents.
@@ -43,3 +44,16 @@ above rather than `up -d`, which starts a detached session with no playable inpu
 If Docker cannot connect to `dockerDesktopLinuxEngine`, start Docker Desktop and
 wait until its Linux engine is running. Exit the game with **Q**, or use **Ctrl+C**
 during play. Containers launched with `--rm` are removed when they exit.
+
+
+## Scripted line mode
+
+The original Normal map remains available without a terminal UI:
+
+```sh
+docker run --rm -i maze-escape-wed:local --line
+```
+
+Supply line-based commands on standard input. Omit `-t` for piped scripts.
+No host Java or Gradle installation is needed. Docker builds and packages both
+interfaces; Java sources and gameplay rules are unchanged by issue #42.

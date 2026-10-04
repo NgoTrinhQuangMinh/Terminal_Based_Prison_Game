@@ -1,125 +1,167 @@
 package model;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/** Player stats and inventory for the base game. */
+/**
+ * Represents the player, their current location in the maze, their
+ * health and attack, and the items they are carrying.
+ *
+ * @author Pat Kupkee
+ * @author Xinran Tian
+ */
 public class Player {
-    public static final String KEY = "Exit key";
-    public static final String HERB = "Healing herb";
-    public static final String WEAPON = "Sword";
+
+    /** The highest health the player can have. */
     public static final int MAX_HEALTH = 10;
+
+    /** The player's attack without a weapon. */
+    public static final int BASE_ATTACK = 3;
+
+    /** The extra attack given by an equipped weapon. */
+    public static final int WEAPON_BONUS = 2;
+
+    /** The most health a single herb can restore. */
+    public static final int HERB_HEALING = 4;
+
     private Position position;
     private int health = MAX_HEALTH;
-    private final int baseAttack = 3;
     private boolean weaponEquipped;
-    private final List<String> inventory = new ArrayList<>();
+    private final Inventory inventory = new Inventory();
 
     /**
-     * Creates a player at the supplied starting coordinate.
+     * Creates a player at the supplied starting position.
      *
-     * <p>Initialises player state using the class field defaults. The constructor does not check whether the coordinate belongs to a maze or is walkable.</p>
-     *
-     * @param position initial player coordinate, normally the map start marker
+     * @param position the player's initial position
      */
-    public Player(Position position) { this.position = position; }
+    public Player(Position position) {
+        this.position = position;
+    }
+
     /**
-     * Returns the player's current coordinate.
+     * Returns the player's current position.
      *
-     * <p>The immutable coordinate can be read without changing player state.</p>
-     *
-     * @return the position currently stored for the player
+     * @return the player's current position
      */
-    public Position position() { return position; }
+    public Position position() {
+        return position;
+    }
+
     /**
-     * Replaces the player's current coordinate.
+     * Updates the player's current position.
      *
-     * <p>Performs no collision, boundary or exit checks. The engine must validate the destination before applying the update.</p>
+     * <p>This method does not perform collision, boundary or exit
+     * validation. The appropriate game logic is responsible for
+     * validating a destination before updating the player's position.</p>
      *
-     * @param position destination coordinate already checked by the caller
+     * @param position the new position for the player
      */
-    public void moveTo(Position position) { this.position = position; }
+    public void moveTo(Position position) {
+        this.position = position;
+    }
+
+    /**
+     * Returns the inventory holding the items the player is carrying.
+     *
+     * @return the player's inventory
+     */
+    public Inventory inventory() {
+        return inventory;
+    }
+
     /**
      * Returns the player's remaining health.
      *
-     * <p>Damage and healing operations update this value; reading it does not mutate player state.</p>
-     *
-     * @return the current health value, initially MAX_HEALTH
+     * @return the current health, between 0 and {@link #MAX_HEALTH}
      */
-    public int health() { return health; }
-    /**
-     * Calculates the damage of one player attack.
-     *
-     * <p>Adds the single weapon bonus when a sword has been equipped. Repeated equipment requests do not stack this bonus.</p>
-     *
-     * @return base attack plus 2 when equipped, otherwise base attack
-     */
-    public int attack() { return baseAttack + (weaponEquipped ? 2 : 0); }
-    /**
-     * Applies incoming damage to the player.
-     *
-     * <p>Negative amounts are treated as zero, and remaining health is clamped at zero. This operation does not itself print feedback or stop the game loop.</p>
-     *
-     * @param amount requested damage amount; negative values have no effect
-     */
-    public void damage(int amount) { health = Math.max(0, health - Math.max(0, amount)); }
-    /**
-     * Returns an immutable snapshot of the player's items.
-     *
-     * <p>The snapshot preserves order and duplicate items. Later collection or consumption does not change a previously returned snapshot.</p>
-     *
-     * @return an immutable copy of the current inventory
-     */
-    public List<String> inventory() { return List.copyOf(inventory); }
-    /**
-     * Checks whether the inventory contains an item name.
-     *
-     * <p>Uses exact string equality on stored names; command aliases and case-insensitive matching are handled by item-use parsing instead.</p>
-     *
-     * @param item stored item name to look up
-     * @return true if at least one matching item is held
-     */
-    public boolean has(String item) { return inventory.contains(item); }
-    /**
-     * Adds one item entry to the inventory.
-     *
-     * <p>Preserves duplicate rewards and does not automatically consume or equip the item. The caller supplies a supported item name.</p>
-     *
-     * @param item item name to append to the inventory
-     */
-    public void collect(String item) { inventory.add(item); }
+    public int health() {
+        return health;
+    }
 
     /**
-     * Removes one matching item, preserving all other inventory entries and equipment state.
-     * @author Minh
-     * @param item stored item name to consume
-     * @return true if one matching item was removed
+     * Returns the player's attack, including any equipped weapon bonus.
+     *
+     * @return the current attack value
      */
-    public boolean consume(String item) { return inventory.remove(item); }
+    public int attack() {
+        return BASE_ATTACK + (weaponEquipped ? WEAPON_BONUS : 0);
+    }
 
     /**
-     * Attempts to consume a healing herb or equip a sword.
+     * Checks whether the player has equipped a weapon.
      *
-     * <p>A herb heals up to four points without exceeding maximum health and is consumed only when healing occurs. A held sword grants one persistent attack bonus. Missing items, repeated equipment and unsupported names return feedback without applying the requested effect.</p>
+     * @return true if a weapon is equipped, false otherwise
+     */
+    public boolean weaponEquipped() {
+        return weaponEquipped;
+    }
+
+    /**
+     * Reduces the player's health by the given amount.
      *
-     * @param item non-null item name or supported alias; matching ignores case
-     * @return feedback describing the effect, missing item, or available choices
+     * <p>Health never drops below zero. Negative amounts are ignored so
+     * damage can never heal the player.</p>
+     *
+     * @param amount the damage taken
+     */
+    public void damage(int amount) {
+        health = Math.max(0, health - Math.max(0, amount));
+    }
+
+    /**
+     * Uses an item from the inventory and describes the result.
+     *
+     * <p>A herb restores up to {@link #HERB_HEALING} health and is only
+     * consumed if healing happens. A weapon is equipped once and its
+     * bonus does not stack. Item names are matched ignoring case and
+     * surrounding spaces. Invalid requests leave the player unchanged.</p>
+     *
+     * @param item the item name typed by the player, such as "herb" or
+     *             "weapon"; may be null or blank
+     * @return feedback describing what happened
      */
     public String use(String item) {
-        if (item.equalsIgnoreCase("herb") || item.equalsIgnoreCase(HERB)) {
-            if (!has(HERB)) { return "You have no herb."; }
-            if (health == MAX_HEALTH) { return "Your health is already full. Herb kept."; }
-            int healed = Math.min(4, MAX_HEALTH - health);
-            health += healed;
-            inventory.remove(HERB);
-            return "You use a herb and restore " + healed + " health.";
+        if (item == null || item.isBlank()) {
+            return "Use what? Try: use herb, use weapon.";
         }
-        if (item.equalsIgnoreCase("weapon") || item.equalsIgnoreCase(WEAPON)) {
-            if (!has(WEAPON)) { return "You have no weapon."; }
-            if (weaponEquipped) { return "Your sword is already equipped."; }
-            weaponEquipped = true;
-            return "Sword equipped. Attack increased by 2.";
+        String name = item.trim().toLowerCase();
+        if (name.equals("herb") || name.equals(Inventory.HERB.toLowerCase())) {
+            return useHerb();
         }
-        return "Use herb or use weapon.";
+        if (name.equals("weapon") || name.equals("sword")) {
+            return equipWeapon();
+        }
+        return "You can't use \"" + item.trim() + "\". Try: use herb, use weapon.";
+    }
+
+    /**
+     * Restores health with a herb if one is held and healing is needed.
+     *
+     * @return feedback describing what happened
+     */
+    private String useHerb() {
+        if (!inventory.has(Inventory.HERB)) {
+            return "You have no herb.";
+        }
+        if (health == MAX_HEALTH) {
+            return "Your health is already full. Herb kept.";
+        }
+        int healed = Math.min(HERB_HEALING, MAX_HEALTH - health);
+        health += healed;
+        inventory.remove(Inventory.HERB);
+        return "You use a herb and restore " + healed + " health.";
+    }
+
+    /**
+     * Equips the weapon if one is held and it is not already equipped.
+     *
+     * @return feedback describing what happened
+     */
+    private String equipWeapon() {
+        if (!inventory.has(Inventory.WEAPON)) {
+            return "You have no weapon.";
+        }
+        if (weaponEquipped) {
+            return "Your sword is already equipped.";
+        }
+        weaponEquipped = true;
+        return "Sword equipped. Attack increased by " + WEAPON_BONUS + ".";
     }
 }

@@ -1,200 +1,256 @@
 package engine;
 
-import command.Command;
-import config.NpcLoader;
 import java.util.List;
-import model.Npc;
-import model.Level;
+
+import command.Command;
 import model.Maze;
+import model.Npc;
 import model.Player;
 import model.Position;
+import model.Inventory;
+import ui.PlayerStatusView;
 
-/** Minimal combat and riddle rules, independent of terminal input/output. */
+/**
+ * Holds the state of one game session and reports whether it has ended.
+ *
+ * <p>A session owns the maze, the player and the NPCs for a single game.
+ * Game rules such as movement, combat and item use are added by other
+ * features and operate on this shared state.</p>
+ *
+ * @author Xinran Tian
+ * @author Minh
+ * @author Lia Huang
+ */
 public class GameEngine {
-    public static final String KEY = Player.KEY;
-    public static final String HERB = Player.HERB;
-    public static final String HELP = "Move: w/a/s/d or forward/left/backward/right\n"
-            + "Forward is up the map; backward is down.\n"
-            + "On N: fight (f), or talk (t) then answer <your answer>.\n"
-            + "Drops enter your inventory automatically. Use herb to heal; use weapon to equip.\n"
-            + "Other commands: inventory (i), look, help, quit (q).";
-    private Maze maze;
-    private final List<Level> levels;
-    private int levelIndex;
+
+    /** The maze marker for the player's starting position. */
+    public static final char START = 'P';
+
+    /** Lists the commands the player can type. */
+    public static final String HELP_TEXT =
+            "Commands: forward/w, backward/s, left/a, right/d, fight/f, talk/t, "
+            + "answer <text>, use <item>, inventory/i, look, help, quit/q.";
+
+    /** Explains the goal of the game. */
+    public static final String OBJECTIVE_TEXT =
+            "Get the exit key from an NPC by fighting it or answering its riddle, "
+            + "then reach the exit (X) to escape.";
+
+    /** Feedback given for any command after the game has ended. */
+    public static final String GAME_OVER_TEXT = "The game is over.";
+
+    private final Maze maze;
     private final Player player;
-    private List<Npc> npcs;
+    private final List<Npc> npcs;
     private boolean won;
     private boolean quit;
 
     /**
-     * Initialises a fresh game session for the supplied maze.
+     * Creates a new game session without any NPCs.
      *
-     * <p>Creates the player at the P marker and loads fresh NPCs from the bundled configuration. The engine retains the supplied maze and owns the session's mutable player and NPC state.</p>
-     *
-     * @param maze validated maze containing the player start and numbered NPC markers
-     * @throws IllegalArgumentException if a required marker or NPC configuration value is invalid
-     * @throws IllegalStateException if the NPC resource cannot be loaded
+     * @param maze the maze to play in
+     * @throws IllegalArgumentException if the maze is null
      */
     public GameEngine(Maze maze) {
-        this(List.of(new Level("Maze", maze, "/npcs.properties")));
+        this(maze, List.of());
     }
 
     /**
-     * Starts a forward-only campaign with fresh player and first-level encounter state.
-     * @author Minh
-     * @param levels non-empty ordered level definitions; copied before play
-     * @throws IllegalArgumentException if no levels are supplied or NPC data is invalid
-     * @throws IllegalStateException if the first NPC resource cannot be loaded
+     * Creates a new game session with the given NPCs.
+     *
+     * <p>The player is created at the maze's start marker with full health
+     * and an empty inventory. The NPC list is copied, so later changes to
+     * the caller's list do not affect the session.</p>
+     *
+     * @param maze the maze to play in
+     * @param npcs the NPCs placed in the maze
+     * @throws IllegalArgumentException if the maze or NPC list is null
      */
-    public GameEngine(List<Level> levels) {
-        if (levels == null || levels.isEmpty()) { throw new IllegalArgumentException("At least one level is required."); }
-        this.levels = List.copyOf(levels);
-        Level first = this.levels.get(0);
-        maze = first.maze();
-        npcs = NpcLoader.load(maze, first.npcResource());
-        player = new Player(maze.find('P'));
+    public GameEngine(Maze maze, List<Npc> npcs) {
+        if (maze == null || npcs == null) {
+            throw new IllegalArgumentException("Maze and NPCs must not be null");
+        }
+        this.maze = maze;
+        this.player = new Player(maze.find(START));
+        this.npcs = List.copyOf(npcs);
     }
 
     /**
-     * Returns the current level's one-based position in the campaign.
-     * @author Minh
-     * @return current level number, starting at one
+     * Returns the maze used by this session.
+     *
+     * @return the session's maze
      */
-    public int levelNumber() { return levelIndex + 1; }
-
-    /**
-     * Returns the number of levels required to finish this campaign.
-     * @author Minh
-     * @return total level count
-     */
-    public int levelCount() { return levels.size(); }
-
-    /**
-     * Returns the configured display name of the current level.
-     * @author Minh
-     * @return current level name
-     */
-    public String levelName() { return levels.get(levelIndex).name(); }
-
-    /**
-     * Exposes the current session's player model.
-     *
-     * <p>Returns the live mutable player rather than a copy; callers can inspect its state and must respect the model's ownership rules.</p>
-     *
-     * @return the player owned by this game session
-     */
-    public Player player() { return player; }
-    /**
-     * Reports whether the player has escaped successfully.
-     *
-     * <p>Quitting or losing all health does not by itself set the victory flag.</p>
-     *
-     * @return true once the engine has recorded a successful exit
-     */
-    public boolean won() { return won; }
-    /**
-     * Checks whether the session has reached an end condition.
-     *
-     * <p>A recorded victory, a quit request or zero player health ends play. This query does not modify state.</p>
-     *
-     * @return true if the session was won, was quit, or the player has zero health
-     */
-    public boolean finished() { return won || quit || player.health() == 0; }
-
-    /**
-     * Checks whether the current encounter has an offered riddle.
-     *
-     * <p>Only an unresolved NPC on the player's current tile can provide an answer target.</p>
-     *
-     * @return true if the current active NPC has offered its riddle
-     */
-    public boolean canAnswerRiddle() {
-        Npc npc = currentNpc();
-        return npc != null && npc.riddleOffered();
+    public Maze maze() {
+        return maze;
     }
 
     /**
-     * Executes one command against the current game session.
+     * Returns the player of this session.
      *
-     * <p>Rejects further actions after the game has ended. Separates the first command token from the remaining argument, dispatches movement, encounters and item use, and returns feedback. Help, look and inventory are read-only; quit records the end of the session. No terminal input or output is performed here.</p>
+     * @return the session's player
+     */
+    public Player player() {
+        return player;
+    }
+
+    /**
+     * Returns the NPCs in this session.
      *
-     * @param input raw command text with an optional argument; null is treated as unknown input
-     * @return feedback describing the result or why the input was rejected
+     * @return an unmodifiable list of the session's NPCs
+     */
+    public List<Npc> npcs() {
+        return npcs;
+    }
+
+    /**
+     * Checks whether the player has escaped.
+     *
+     * @return true if the game has been won, false otherwise
+     */
+    public boolean won() {
+        return won;
+    }
+
+    /**
+     * Marks the game as won. Used when the player escapes through the exit.
+     */
+    public void markWon() {
+        won = true;
+    }
+
+    /**
+     * Ends the game because the player chose to quit.
+     */
+    public void quit() {
+        quit = true;
+    }
+
+    /**
+     * Checks whether play has ended.
+     *
+     * @return true if the game was won, the player quit, or the player's
+     *         health is zero; false otherwise
+     */
+    public boolean finished() {
+        return won || quit || player.health() == 0;
+    }
+
+    /**
+     * Runs one line of player input and returns the resulting feedback.
+     *
+     * <p>This is the single entry point shared by the terminal UI and the
+     * automatic game tester. The first word selects the command and the rest
+     * of the line is passed on as its argument, so multi-word answers and
+     * item names work. Unknown input changes nothing. Once the game has
+     * finished, no further commands are run.</p>
+     *
+     * @param input the line typed by the player; may be null
+     * @return feedback describing what happened
      */
     public String execute(String input) {
-        if (finished()) { return "The game has ended."; }
-        String[] parts = input == null ? new String[0] : input.trim().split("\\s+", 2);
-        String argument = parts.length == 2 ? parts[1].trim() : "";
-        return switch (Command.parse(input)) {
-            case LEFT -> move(-1, 0);
-            case RIGHT -> move(1, 0);
-            case FORWARD -> move(0, -1);
-            case BACKWARD -> move(0, 1);
+        if (finished()) {
+            return GAME_OVER_TEXT;
+        }
+        Command command = Command.parse(input);
+        String argument = Command.argument(input);
+
+        return switch (command) {
+            case LEFT, RIGHT, FORWARD, BACKWARD -> move(command);
             case FIGHT -> fight();
             case TALK -> talk();
             case ANSWER -> answer(argument);
             case USE -> player.use(argument);
-            case INVENTORY -> "Inventory: " + (player.inventory().isEmpty() ? "empty" : String.join(", ", player.inventory()));
-            case HELP -> HELP;
-            case LOOK -> "Obtain a key in each level and reach its exit (X). Each door consumes one key. Escape the final level to win.";
-            case QUIT -> { quit = true; yield "Goodbye."; }
-            case UNKNOWN -> "Unknown command. Type help for controls.";
+            case INVENTORY -> PlayerStatusView.inventoryText(player.inventory());
+            case HELP -> HELP_TEXT;
+            case LOOK -> OBJECTIVE_TEXT;
+            case QUIT -> {
+                quit();
+                yield "You give up on escaping. Goodbye.";
+            }
+            case UNKNOWN -> "Unknown command. Type help to see the commands.";
         };
     }
 
     /**
-     * Attempts to move the player by a coordinate offset.
+     * Attempts to move the player in the direction represented by a command.
      *
-     * <p>Blocks walls, out-of-bounds destinations and the exit when no key is held. A permitted move updates position, enters the next level or wins at the final exit, or reports an active NPC's stats. Arrival alone does not start combat.</p>
+     * <p>The command is converted into a coordinate offset and the
+     * destination is checked by the maze before the player's position
+     * is updated. Invalid or unsupported commands do not change the
+     * player's position.</p>
      *
-     * @param dx horizontal movement offset in columns
-     * @param dy vertical movement offset in rows
-     * @return movement, blocking, encounter, level transition or victory feedback
+     * @param command movement command to execute; may be null
+     * @return feedback describing the result of the movement attempt
      */
-    private String move(int dx, int dy) {
-        Position next = player.position().move(dx, dy);
-        if (maze.isWall(next)) { return "A wall blocks your way."; }
-        if (maze.at(next) == 'X' && !player.has(KEY)) { return "The exit is locked. An NPC holds its key."; }
-        if (maze.at(next) == 'X') { return enterExit(next); }
-        player.moveTo(next);
-        Npc npc = currentNpc();
-        if (npc != null) {
-            return "NPC: Health " + npc.health() + ", Attack " + npc.attack() + ". Choose fight or talk, or move away.";
+    public String move(Command command) {
+        if (command == null || command == Command.UNKNOWN) {
+            return "Unknown movement command.";
         }
-        return "You move through the maze.";
+
+        return switch (command) {
+            case LEFT -> moveBy(-1, 0);
+            case RIGHT -> moveBy(1, 0);
+            case FORWARD -> moveBy(0, -1);
+            case BACKWARD -> moveBy(0, 1);
+            default -> "Unknown movement command.";
+        };
     }
 
     /**
-     * Unlocks an exit and enters the next level, or wins after the final level.
+     * Attempts to move the player by the supplied coordinate offset.
      *
-     * <p>Loads the next encounters before modifying live state. A loading failure leaves the
-     * player, key and current level intact so the player may retry. Successful transitions
-     * retain health, equipment and other inventory, consume one key and relocate to P.</p>
-     * @author Minh
-     * @param exit validated exit coordinate; the caller has already checked key ownership
-     * @return transition, configuration failure or final victory feedback
+     * <p>The destination is calculated from the player's current position.
+     * The maze determines whether the destination is blocked. If the
+     * destination is the exit, the player must have the required key before
+     * entering it. After a successful movement, an unresolved NPC at the
+     * destination is reported.</p>
+     *
+     * @param dx horizontal movement offset
+     * @param dy vertical movement offset
+     * @return feedback describing the result of the movement attempt
      */
-    private String enterExit(Position exit) {
-        if (levelIndex + 1 == levels.size()) {
-            player.consume(KEY);
-            player.moveTo(exit);
-            won = true;
-            return "You unlock the exit and escape the maze. You win!";
+    private String moveBy(int dx, int dy) {
+        Position destination = player.position().move(dx, dy);
+
+        if (maze.isWall(destination)) {
+            return "Movement blocked.";
         }
-        Level nextLevel = levels.get(levelIndex + 1);
-        List<Npc> nextNpcs;
-        try {
-            nextNpcs = NpcLoader.load(nextLevel.maze(), nextLevel.npcResource());
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            return "Could not enter the next level: " + exception.getMessage();
+
+        if (maze.at(destination) == 'X') {
+            if (!player.inventory().has(Inventory.KEY)) {
+                return "The exit is locked. You need the key.";
+            }
+
+            player.moveTo(destination);
+            markWon();
+            return "You escaped!";
         }
-        player.consume(KEY);
-        maze = nextLevel.maze();
-        npcs = nextNpcs;
-        levelIndex++;
-        player.moveTo(maze.find('P'));
-        return "You unlock the door. Entered level " + levelNumber() + "/" + levelCount()
-                + ": " + levelName() + ". Find its exit key.";
+
+        player.moveTo(destination);
+
+        Npc npc = currentNpc();
+        if (npc != null) {
+            return "NPC encountered. Health: " + npc.health()
+                    + ", Attack: " + npc.attack()
+                    + ". Choose fight or talk.";
+        }
+
+        return "Movement successful.";
+    }
+
+    /**
+     * Reports whether the player can submit an answer to the active encounter.
+     *
+     * <p>Requires an unfinished session and an unresolved NPC on the current
+     * tile whose riddle has been offered. Reading this flag does not offer a
+     * riddle, resolve an encounter or change the inventory.</p>
+     *
+     * @author Minh
+     * @return true when an answer can be submitted to the current NPC
+     */
+    public boolean canAnswerRiddle() {
+        Npc npc = currentNpc();
+        return !finished() && npc != null && npc.riddleOffered();
     }
 
     /**
@@ -202,6 +258,8 @@ public class GameEngine {
      *
      * <p>Searches the existing session collection and ignores resolved NPCs. Returning the same stored object preserves encounter progress when the player leaves and returns.</p>
      *
+     *
+     * @author Minh
      * @return the first unresolved NPC at the player position, or null if none exists
      */
     private Npc currentNpc() {
@@ -210,10 +268,66 @@ public class GameEngine {
     }
 
     /**
+     * Adds all rewards from an NPC to the player inventory.
+     *
+     * <p>Preserves configured order and duplicates and does not automatically use or equip items. The caller must ensure this is called only once for a completed encounter; this helper does not enforce that condition itself.</p>
+     *
+     * @author Minh
+     * @param npc NPC whose configured drops are to be awarded
+     * @return feedback listing the collected item names
+     */
+    private String awardDrops(Npc npc) {
+        npc.drops().forEach(player.inventory()::add);
+        return "Drops collected: " + String.join(", ", npc.drops()) + ".";
+    }
+
+    /**
+     * Offers the current active NPC's riddle.
+     *
+     * <p>Marks the riddle as offered and returns its text with answer instructions. Talking does not damage either participant or award items.</p>
+     *
+     * @author Minh
+     * @return the riddle and instructions, or feedback when no active NPC is present
+     */
+    private String talk() {
+        Npc npc = currentNpc();
+        if (npc == null) { return "There is no NPC here to talk to."; }
+        return "NPC: " + npc.offerRiddle() + "\nType answer <your answer>.";
+    }
+
+    /**
+     * Checks a proposed answer for the current NPC encounter.
+     *
+     * <p>Requires a current unresolved NPC and an already offered riddle. Blank and incorrect attempts award nothing. A correct answer resolves that NPC before granting its configured drops, without combat damage.</p>
+     *
+     * @author Minh
+     * @param attempt non-null answer text from command argument parsing
+     * @return feedback for an invalid target, missing question, unsuccessful attempt or successful resolution
+     */
+    private String answer(String attempt) {
+        Npc npc = currentNpc();
+        if (npc == null) {
+            return "There is no NPC here to answer.";
+        }
+        if (!npc.riddleOffered()) {
+            return "Talk to the NPC to hear its riddle first.";
+        }
+        if (attempt.isBlank()) {
+            return "Type answer <your answer>.";
+        }
+        if (!npc.accepts(attempt)) {
+            return "NPC: Incorrect. Try again, or choose to fight.";
+        }
+        npc.resolve();
+        return "NPC: Correct! " + awardDrops(npc);
+    }
+
+    /**
      * Performs one player-first combat exchange.
      *
      * <p>Requires an active NPC at the player location. A defeated NPC grants rewards and does not counterattack; a surviving NPC damages the player. Reports player death or the remaining combat stats without reading terminal input.</p>
      *
+     * @author Minh
      * @return feedback for an unavailable target, combat exchange, NPC defeat or player death
      */
     private String fight() {
@@ -228,72 +342,65 @@ public class GameEngine {
     }
 
     /**
-     * Offers the current active NPC's riddle.
+     * Renders the current maze and player status as plain text.
      *
-     * <p>Marks the riddle as offered and returns its text with answer instructions. Talking does not damage either participant or award items.</p>
+     * <p>The stored maze remains unchanged. Its original player start and
+     * numbered NPC markers are shown as floor, then unresolved NPCs and the
+     * current player position are overlaid. The player marker takes priority
+     * when the player shares a tile with an unresolved NPC.</p>
      *
-     * @return the riddle and instructions, or feedback when no active NPC is present
-     */
-    private String talk() {
-        Npc npc = currentNpc();
-        if (npc == null) { return "There is no NPC here to talk to."; }
-        return "NPC: " + npc.offerRiddle() + "\nType answer <your answer>.";
-    }
-
-    /**
-     * Checks a proposed answer for the current NPC encounter.
-     *
-     * <p>Requires a current unresolved NPC and an already offered riddle. Blank and incorrect attempts award nothing. A correct answer resolves that NPC before granting its configured drops, without combat damage.</p>
-     *
-     * @param attempt non-null answer text from command argument parsing
-     * @return feedback for an invalid target, missing question, unsuccessful attempt or successful resolution
-     */
-    private String answer(String attempt) {
-        Npc npc = currentNpc();
-        if (npc == null) { return "There is no NPC here to answer."; }
-        if (!npc.riddleOffered()) { return "Talk to the NPC to hear its riddle first."; }
-        if (attempt.isBlank()) { return "Type answer <your answer>."; }
-        if (!npc.accepts(attempt)) { return "NPC: Incorrect. Try again, or choose to fight."; }
-        npc.resolve();
-        return "NPC: Correct! " + awardDrops(npc);
-    }
-
-    /**
-     * Adds all rewards from an NPC to the player inventory.
-     *
-     * <p>Preserves configured order and duplicates and does not automatically use or equip items. The caller must ensure this is called only once for a completed encounter; this helper does not enforce that condition itself.</p>
-     *
-     * @param npc NPC whose configured drops are to be awarded
-     * @return feedback listing the collected item names
-     */
-    private String awardDrops(Npc npc) {
-        npc.drops().forEach(player::collect);
-        return "Drops collected: " + String.join(", ", npc.drops()) + ".";
-    }
-
-    /**
-     * Builds a textual map and player-status display.
-     *
-     * <p>Overlays unresolved NPCs and the player on the stored maze, with the player taking precedence. Original start and numeric NPC markers appear as floor. Appends a legend, health, attack and key status without changing the session.</p>
-     *
-     * @return a multiline string ready for terminal display
+     * @author Lia Huang
+     * @return the current map, legend and player status
      */
     public String render() {
-        StringBuilder output = new StringBuilder("Level " + levelNumber() + "/" + levelCount() + ": " + levelName() + "\n");
+        StringBuilder output = new StringBuilder();
+
         for (int y = 0; y < maze.height(); y++) {
             for (int x = 0; x < maze.width(); x++) {
                 Position position = new Position(x, y);
-                char symbol = maze.at(position);
-                if (symbol == 'P' || Character.isDigit(symbol)) { symbol = '.'; }
-                for (Npc npc : npcs) {
-                    if (!npc.resolved() && npc.position().equals(position)) { symbol = 'N'; }
+                char tile = maze.at(position);
+
+                if (tile == START
+                        || (tile >= '1' && tile <= '9')) {
+                    tile = '.';
                 }
-                if (player.position().equals(position)) { symbol = '@'; }
-                output.append(symbol);
+
+                if (hasUnresolvedNpcAt(position)) {
+                    tile = 'N';
+                }
+
+                if (player.position().equals(position)) {
+                    tile = '@';
+                }
+
+                output.append(tile);
             }
+
             output.append('\n');
         }
-        return output + "@ You  - | Wall  N NPC  X Exit\nHealth: " + player.health()
-                + "/" + Player.MAX_HEALTH + " | Attack: " + player.attack() + " | Key: " + (player.has(KEY) ? "yes" : "no");
+
+        output.append(
+                "Legend: @ = player | N = unresolved NPC | X = exit\n"
+        );
+
+        output.append(
+                PlayerStatusView.statusLine(player)
+        );
+
+        return output.toString();
+    }
+
+    /**
+     * Checks whether an unresolved NPC occupies a map position.
+     *
+     * @author Lia Huang
+     * @param position position to inspect
+     * @return true when an unresolved NPC occupies the position
+     */
+    private boolean hasUnresolvedNpcAt(Position position) {
+        return npcs.stream()
+                .anyMatch(npc ->
+                        !npc.resolved()
+                                && npc.position().equals(position));
     }
 }

@@ -1,14 +1,20 @@
 package model;
 
-/** A zero-based column and row in the maze.
+/**
+ * Represents a zero-based column and row in the maze.
+ *
+ * @author Pat Kupkee
  * @param x column
  * @param y row
  */
 public record Position(int x, int y) {
+
     /**
      * Calculates a position offset from this coordinate.
      *
-     * <p>Returns a new value without modifying this position. The offset is not checked against map boundaries or walls; callers perform those checks.</p>
+     * <p>Returns a new value without modifying this position. The offset
+     * is not checked against map boundaries or walls; callers perform
+     * those checks.</p>
      *
      * @param dx horizontal offset in columns; negative values move left
      * @param dy vertical offset in rows; negative values move upward

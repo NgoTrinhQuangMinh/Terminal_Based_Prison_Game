@@ -1,46 +1,53 @@
 package model;
 
-/** Bundled campaign choices with descriptions shown before play.
+/** Ready-to-play single-map choices with their matching encounter resources.
  * @author Minh
  */
 public enum Difficulty {
-    EASY("Easy", "2 short maps; weaker NPCs and simple routes.", "/campaigns/easy/levels.properties"),
-    NORMAL("Normal", "2 maps; balanced combat and exploration.", "/campaigns/normal/levels.properties"),
-    HARD("Hard", "3 larger maps; tougher NPCs. Use herbs and equipment.", "/campaigns/hard/levels.properties");
+    EASY("Easy", "Short route and a weaker NPC.", "/difficulty/easy/maze.txt", "/difficulty/easy/npcs.properties"),
+    NORMAL("Normal", "The original prison map and balanced encounters.", "/maze.txt", "/npcs.properties"),
+    HARD("Hard", "Larger maze and a tougher NPC.", "/difficulty/hard/maze.txt", "/difficulty/hard/npcs.properties");
 
     private final String label;
     private final String description;
-    private final String resource;
+    private final String mazeResource;
+    private final String npcResource;
 
-    /**
-     * Defines a selectable difficulty and its bundled campaign resource.
+    /** Defines a menu choice and the paired resources used to start it.
      * @author Minh
-     * @param label display name
-     * @param description player-facing explanation of the challenge
-     * @param resource absolute classpath manifest path
+     * @param label player-facing name
+     * @param description explanation of the challenge
+     * @param mazeResource absolute map resource path
+     * @param npcResource absolute matching NPC resource path
      */
-    Difficulty(String label, String description, String resource) {
-        this.label = label; this.description = description; this.resource = resource;
+    Difficulty(String label, String description, String mazeResource, String npcResource) {
+        this.label = label;
+        this.description = description;
+        this.mazeResource = mazeResource;
+        this.npcResource = npcResource;
     }
 
-    /**
-     * Returns the name displayed in the selection menu.
+    /** Returns the display name without changing configuration.
      * @author Minh
-     * @return difficulty name
+     * @return difficulty label
      */
     public String label() { return label; }
 
-    /**
-     * Explains the map count and challenge before a player chooses.
+    /** Describes the challenge before the player makes a selection.
      * @author Minh
-     * @return concise difficulty description
+     * @return brief menu description
      */
     public String description() { return description; }
 
-    /**
-     * Identifies the bundled campaign associated with this choice.
+    /** Identifies the bundled maze to load for this selection.
      * @author Minh
-     * @return absolute manifest resource path
+     * @return absolute maze resource path
      */
-    public String resource() { return resource; }
+    public String mazeResource() { return mazeResource; }
+
+    /** Identifies the NPC configuration matched to the selected maze.
+     * @author Minh
+     * @return absolute NPC resource path
+     */
+    public String npcResource() { return npcResource; }
 }

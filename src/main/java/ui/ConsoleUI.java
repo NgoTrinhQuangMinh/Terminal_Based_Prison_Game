@@ -18,6 +18,10 @@ import org.jline.utils.InfoCmp.Capability;
  * @author Minh
  */
 public class ConsoleUI {
+    /** Title displayed above the persistent game screen. */
+    public static final String TITLE = "MAZE ESCAPE";
+
+    private final String difficultyLabel;
     private final GameEngine game;
     private final GameControls controls;
 
@@ -27,9 +31,25 @@ public class ConsoleUI {
      * <p>Retains the supplied engine and creates a GameControls instance for input state. Construction does not open a terminal or start reading keys.</p>
      *
      * @param game game session whose commands, status and display are used by this UI
+     * @author Minh
      */
     public ConsoleUI(GameEngine game) {
-        this.game = game;
+        this(game, "");
+    }
+
+    /**
+     * Creates an interface that identifies the selected difficulty on every frame.
+     *
+     * <p>The label is presentation metadata only. All rules and encounter stats
+     * come from the supplied session; constructing the UI does not read input.</p>
+     * @author Minh
+     * @param game selected game session, which must not be null
+     * @param difficultyLabel display label, or an empty string for an unnamed game
+     * @throws NullPointerException if the game or label is null
+     */
+    public ConsoleUI(GameEngine game, String difficultyLabel) {
+        this.game = java.util.Objects.requireNonNull(game, "game");
+        this.difficultyLabel = java.util.Objects.requireNonNull(difficultyLabel, "difficultyLabel");
         controls = new GameControls(game);
     }
 
@@ -37,6 +57,7 @@ public class ConsoleUI {
      * Opens a native terminal and runs the immediate-key interface.
      *
      * <p>Creates and closes the terminal with try-with-resources, delegates the key loop, and reports terminal setup or state failures to standard error with launch guidance.</p>
+     * @author Minh
      */
     public void run() {
         try (Terminal terminal = TerminalBuilder.builder().system(true).dumb(false).build()) {
@@ -53,6 +74,7 @@ public class ConsoleUI {
      * <p>Enters raw input and the alternate screen, draws frames, and dispatches keys while the terminal is large enough. Quit shortcuts remain available when undersized. A finally block restores terminal attributes, keypad mode, cursor visibility and the normal screen; the supplied terminal is not closed here.</p>
      *
      * @param terminal open terminal used for input, sizing and output
+     * @author Minh
      */
     void run(Terminal terminal) {
         Attributes original = terminal.enterRawMode();
@@ -65,19 +87,14 @@ public class ConsoleUI {
             display.clear();
             BindingReader reader = new BindingReader(terminal.reader());
             KeyMap<String> keys = keys(terminal);
-            int displayedLevel = game.levelNumber();
             while (true) {
-                if (displayedLevel != game.levelNumber()) {
-                    display.clear();
-                    displayedLevel = game.levelNumber();
-                }
                 draw(terminal, display);
                 String binding = reader.readBinding(keys);
                 if (binding == null || game.finished()) { break; }
                 String key = binding.equals("TEXT") ? reader.getLastBinding() : binding;
                 boolean quitting = key.equals("\u0003") || key.equals("\u0004")
                         || (!controls.answering() && key.equalsIgnoreCase("q"));
-                if (quitting || (terminal.getWidth() >= minimumWidth() && terminal.getHeight() >= minimumHeight())) {
+                if (quitting || key.equals("\u001b") || (terminal.getWidth() >= minimumWidth() && terminal.getHeight() >= minimumHeight())) {
                     controls.handle(key);
                 }
                 if (quitting) { break; }
@@ -100,6 +117,7 @@ public class ConsoleUI {
      *
      * @param terminal terminal whose capabilities provide native arrow sequences
      * @return a new key map for text input and arrow actions
+     * @author Minh
      */
     private KeyMap<String> keys(Terminal terminal) {
         KeyMap<String> keys = new KeyMap<>();
@@ -124,6 +142,7 @@ public class ConsoleUI {
      * @param action logical action name returned for a matching sequence
      * @param capability terminal capability identifying the arrow key
      * @param sequences fallback escape sequences accepted for the same action
+     * @author Minh
      */
     private void bindArrow(KeyMap<String> keys, Terminal terminal, String action,
                            Capability capability, String... sequences) {
@@ -139,9 +158,9 @@ public class ConsoleUI {
      *
      * @param terminal terminal providing dimensions and output
      * @param display display updater that applies the new frame
+     * @author Minh
      */
     private void draw(Terminal terminal, Display display) {
-        controls.synchronizeLevel();
         int width = Math.max(1, terminal.getWidth());
         int height = Math.max(1, terminal.getHeight());
         display.resize(height, width);
@@ -149,9 +168,9 @@ public class ConsoleUI {
         if (width < minimumWidth() || height < minimumHeight()) {
             lines.add(new AttributedString("Resize terminal to at least " + minimumWidth() + " columns x " + minimumHeight() + " rows."));
             lines.add(new AttributedString("Current size: " + width + " x " + height + ". Press a key to refresh."));
-            lines.add(new AttributedString("Q quits; Escape cancels riddle input."));
+            lines.add(new AttributedString("Ctrl+C quits; Escape cancels riddle input."));
         } else {
-            lines.add(new AttributedString("MAZE ESCAPE", AttributedStyle.BOLD.foreground(AttributedStyle.CYAN)));
+            lines.add(new AttributedString(TITLE + (difficultyLabel.isEmpty() ? "" : " - " + difficultyLabel), AttributedStyle.BOLD.foreground(AttributedStyle.CYAN)));
             lines.add(new AttributedString("-".repeat(Math.min(width - 1, 78))));
             for (String row : game.render().split("\n")) {
                 lines.add(new AttributedString(row));
@@ -160,7 +179,7 @@ public class ConsoleUI {
             lines.add(new AttributedString("WASD / Arrows: Move   F: Fight   T: Riddle   Q: Quit"));
             lines.add(new AttributedString("H: Heal   E: Equip weapon   I: Inventory   Ctrl+C: Quit"));
             String inventory = controls.inventoryVisible()
-                    ? "Inventory: " + (game.player().inventory().isEmpty() ? "empty" : String.join(", ", game.player().inventory()))
+                    ? PlayerStatusView.inventoryText(game.player().inventory())
                     : "Inventory hidden (I to show)";
             addWrapped(lines, inventory, width - 1, 2);
             lines.add(new AttributedString("-".repeat(Math.min(width - 1, 78))));
@@ -182,7 +201,7 @@ public class ConsoleUI {
     }
 
     /**
-     * Calculates the width needed to show this level without clipping the map or status.
+     * Calculates the width needed to show this map without clipping the map or status.
      * @author Minh
      * @return required terminal columns, including one spare column
      */
@@ -208,6 +227,7 @@ public class ConsoleUI {
      * @param text non-null feedback to wrap
      * @param width maximum line width; callers provide at least three columns for truncation
      * @param count maximum number of lines to append
+     * @author Minh
      */
     private void addWrapped(List<AttributedString> lines, String text, int width, int count) {
         String remaining = text.replace('\n', ' ');

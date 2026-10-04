@@ -10,8 +10,8 @@ import org.jline.utils.InfoCmp.Capability;
  */
 public final class DifficultyMenu {
     /** Prevents utility construction.
- * @author Minh
- */
+     * @author Minh
+     */
     private DifficultyMenu() { }
 
     /**
@@ -30,7 +30,7 @@ public final class DifficultyMenu {
         try {
             terminal.puts(Capability.clear_screen);
             terminal.writer().println("MAZE ESCAPE - CHOOSE DIFFICULTY");
-            terminal.writer().println("Choose a ready-to-play set of linked maps.");
+            terminal.writer().println("Choose a ready-to-play map.");
             for (Difficulty difficulty : Difficulty.values()) {
                 terminal.writer().println((difficulty.ordinal() + 1) + ") " + difficulty.label()
                         + " - " + difficulty.description());

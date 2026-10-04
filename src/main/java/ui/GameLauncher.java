@@ -1,6 +1,6 @@
 package ui;
 
-import config.CampaignLoader;
+import config.DifficultyLoader;
 import engine.GameEngine;
 import java.io.IOException;
 import model.Difficulty;
@@ -12,12 +12,12 @@ import org.jline.terminal.TerminalBuilder;
  */
 public final class GameLauncher {
     /** Prevents utility construction.
- * @author Minh
- */
+     * @author Minh
+     */
     private GameLauncher() { }
 
     /**
-     * Opens the native terminal, presents difficulty choices and starts the selected map set.
+     * Opens the native terminal, presents difficulty choices and starts the selected map.
      *
      * <p>Closes the terminal on exit. Reports configuration and terminal failures instead
      * of silently substituting a different difficulty.</p>
@@ -47,8 +47,8 @@ public final class GameLauncher {
             terminal.writer().println("Goodbye."); terminal.flush();
             return null;
         }
-        GameEngine game = new GameEngine(CampaignLoader.load(difficulty));
-        new ConsoleUI(game).run(terminal);
+        GameEngine game = DifficultyLoader.load(difficulty);
+        new ConsoleUI(game, difficulty.label()).run(terminal);
         return game;
     }
 }
