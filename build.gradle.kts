@@ -27,3 +27,18 @@ application {
 tasks.named<JavaExec>("run") {
     standardInput = System.`in`
 }
+
+// Runs the automatic gameplay tester without requiring terminal input.
+tasks.register<JavaExec>("runTester") {
+    group = "verification"
+    description =
+        "Runs the automatic game tester against the bundled game configuration."
+
+    classpath =
+        sourceSets["main"]
+            .runtimeClasspath
+
+    mainClass.set(
+        "tester.GameTester"
+    )
+}
