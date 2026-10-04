@@ -239,6 +239,21 @@ public class GameEngine {
     }
 
     /**
+     * Reports whether the player can submit an answer to the active encounter.
+     *
+     * <p>Requires an unfinished session and an unresolved NPC on the current
+     * tile whose riddle has been offered. Reading this flag does not offer a
+     * riddle, resolve an encounter or change the inventory.</p>
+     *
+     * @author Minh
+     * @return true when an answer can be submitted to the current NPC
+     */
+    public boolean canAnswerRiddle() {
+        Npc npc = currentNpc();
+        return !finished() && npc != null && npc.riddleOffered();
+    }
+
+    /**
      * Finds the active encounter on the player's current tile.
      *
      * <p>Searches the existing session collection and ignores resolved NPCs. Returning the same stored object preserves encounter progress when the player leaves and returns.</p>

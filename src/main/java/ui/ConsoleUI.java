@@ -1,89 +1,230 @@
 package ui;
 
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.util.Scanner;
-
 import engine.GameEngine;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import org.jline.keymap.BindingReader;
+import org.jline.keymap.KeyMap;
+import org.jline.terminal.Attributes;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStyle;
+import org.jline.utils.Display;
+import org.jline.utils.InfoCmp.Capability;
 
-/**
- * Runs the game in the terminal by reading commands line by line.
- *
- * <p>This class only handles input and output. Every command is passed to
- * {@link GameEngine#execute(String)}, so all game rules stay in the engine.</p>
- *
- * @author Xinran Tian
+/** Full-screen terminal UI with immediate keys and isolated riddle typing.
+ * @author Minh
  */
 public class ConsoleUI {
+    /** Title displayed above the persistent game screen. */
+    public static final String TITLE = "MAZE ESCAPE";
 
-    /** The title shown when the game starts. */
-    public static final String TITLE = "=== Prison Escape ===";
-
-    /** The text shown before each line of input. */
-    public static final String PROMPT = "> ";
-
-    private final GameEngine engine;
-    private final Scanner input;
-    private final PrintStream output;
+    private final GameEngine game;
+    private final GameControls controls;
 
     /**
-     * Creates a terminal UI for a game session.
+     * Connects a terminal UI to an existing game session.
      *
-     * @param engine the game session to play
-     * @param input where the player's commands are read from
-     * @param output where the game text is printed
-     * @throws IllegalArgumentException if any argument is null
+     * <p>Retains the supplied engine and creates a GameControls instance for input state. Construction does not open a terminal or start reading keys.</p>
+     *
+     * @param game game session whose commands, status and display are used by this UI
+     * @author Minh
      */
-    public ConsoleUI(GameEngine engine, InputStream input, PrintStream output) {
-        if (engine == null || input == null || output == null) {
-            throw new IllegalArgumentException("Engine, input and output must not be null");
-        }
-        this.engine = engine;
-        this.input = new Scanner(input);
-        this.output = output;
+    public ConsoleUI(GameEngine game) {
+        this.game = java.util.Objects.requireNonNull(game, "game");
+        controls = new GameControls(game);
     }
 
     /**
-     * Plays the game until it finishes or there is no more input.
+     * Opens a native terminal and runs the immediate-key interface.
      *
-     * <p>Shows the introduction and the starting map, then for each line
-     * typed by the player shows the command's feedback and the updated map.
-     * A closing message is shown when the loop ends.</p>
+     * <p>Creates and closes the terminal with try-with-resources, delegates the key loop, and reports terminal setup or state failures to standard error with launch guidance.</p>
+     * @author Minh
      */
     public void run() {
-        output.println(TITLE);
-        output.println(GameEngine.OBJECTIVE_TEXT);
-        output.println(GameEngine.HELP_TEXT);
-        output.println();
-        output.println(engine.render());
-
-        while (!engine.finished()) {
-            output.print(PROMPT);
-            output.flush();
-            if (!input.hasNextLine()) {
-                break;
-            }
-            output.println(engine.execute(input.nextLine()));
-            output.println();
-            output.println(engine.render());
+        try (Terminal terminal = TerminalBuilder.builder().system(true).dumb(false).build()) {
+            run(terminal);
+        } catch (IOException | IllegalStateException exception) {
+            System.err.println("Could not open the game terminal: " + exception.getMessage());
+            System.err.println("Run play.bat in Windows Terminal or PowerShell, outside the IDE output console.");
         }
-
-        output.println();
-        output.println(closingMessage());
     }
 
     /**
-     * Chooses the message shown when the game loop ends.
+     * Runs the immediate-key loop using an existing terminal.
      *
-     * @return a message for winning, losing, or leaving the game
+     * <p>Enters raw input and the alternate screen, draws frames, and dispatches keys while the terminal is large enough. Quit shortcuts remain available when undersized. A finally block restores terminal attributes, keypad mode, cursor visibility and the normal screen; the supplied terminal is not closed here.</p>
+     *
+     * @param terminal open terminal used for input, sizing and output
+     * @author Minh
      */
-    private String closingMessage() {
-        if (engine.won()) {
-            return "Congratulations, you escaped the prison!";
+    void run(Terminal terminal) {
+        Attributes original = terminal.enterRawMode();
+        try {
+            terminal.puts(Capability.enter_ca_mode);
+            terminal.puts(Capability.keypad_xmit);
+            terminal.puts(Capability.cursor_invisible);
+            terminal.flush();
+            Display display = new Display(terminal, true);
+            display.clear();
+            BindingReader reader = new BindingReader(terminal.reader());
+            KeyMap<String> keys = keys(terminal);
+            while (true) {
+                draw(terminal, display);
+                String binding = reader.readBinding(keys);
+                if (binding == null || game.finished()) { break; }
+                String key = binding.equals("TEXT") ? reader.getLastBinding() : binding;
+                boolean quitting = key.equals("\u0003") || key.equals("\u0004")
+                        || (!controls.answering() && key.equalsIgnoreCase("q"));
+                if (quitting || key.equals("\u001b") || (terminal.getWidth() >= minimumWidth() && terminal.getHeight() >= minimumHeight())) {
+                    controls.handle(key);
+                }
+                if (quitting) { break; }
+            }
+        } finally {
+            terminal.setAttributes(original);
+            terminal.puts(Capability.cursor_normal);
+            terminal.puts(Capability.keypad_local);
+            terminal.puts(Capability.exit_ca_mode);
+            terminal.flush();
         }
-        if (engine.player().health() == 0) {
-            return "You were defeated. Better luck next time.";
+        terminal.writer().println(controls.message());
+        terminal.flush();
+    }
+
+    /**
+     * Builds the key bindings used by the terminal input loop.
+     *
+     * <p>Maps ordinary ASCII and Unicode input to text handling and registers named arrow actions with terminal-specific and common escape sequences. Uses a short ambiguity timeout to distinguish escape-key input.</p>
+     *
+     * @param terminal terminal whose capabilities provide native arrow sequences
+     * @return a new key map for text input and arrow actions
+     * @author Minh
+     */
+    private KeyMap<String> keys(Terminal terminal) {
+        KeyMap<String> keys = new KeyMap<>();
+        keys.setNomatch("TEXT");
+        keys.setUnicode("TEXT");
+        keys.setAmbiguousTimeout(150);
+        for (char key = 0; key < 128; key++) { keys.bind("TEXT", String.valueOf(key)); }
+        bindArrow(keys, terminal, "UP", Capability.key_up, "\u001b[A", "\u001bOA");
+        bindArrow(keys, terminal, "DOWN", Capability.key_down, "\u001b[B", "\u001bOB");
+        bindArrow(keys, terminal, "RIGHT", Capability.key_right, "\u001b[C", "\u001bOC");
+        bindArrow(keys, terminal, "LEFT", Capability.key_left, "\u001b[D", "\u001bOD");
+        return keys;
+    }
+
+    /**
+     * Registers fallback and terminal-native sequences for an arrow action.
+     *
+     * <p>Mutates the supplied key map. Fallback sequences are always registered; the capability sequence is added only when the terminal supplies one.</p>
+     *
+     * @param keys key map to update
+     * @param terminal terminal providing the native capability sequence
+     * @param action logical action name returned for a matching sequence
+     * @param capability terminal capability identifying the arrow key
+     * @param sequences fallback escape sequences accepted for the same action
+     * @author Minh
+     */
+    private void bindArrow(KeyMap<String> keys, Terminal terminal, String action,
+                           Capability capability, String... sequences) {
+        keys.bind(action, sequences);
+        String sequence = KeyMap.key(terminal, capability);
+        if (sequence != null) { keys.bind(action, sequence); }
+    }
+
+    /**
+     * Draws a bounded frame for the current terminal size.
+     *
+     * <p>Shows a resize prompt when the current map and controls cannot fit, with a minimum of 70 columns by 24 rows. Otherwise displays the map, controls, inventory visibility, feedback and answer input. Clips output to the available rows and columns, updates the display and flushes the terminal without changing gameplay state.</p>
+     *
+     * @param terminal terminal providing dimensions and output
+     * @param display display updater that applies the new frame
+     * @author Minh
+     */
+    private void draw(Terminal terminal, Display display) {
+        int width = Math.max(1, terminal.getWidth());
+        int height = Math.max(1, terminal.getHeight());
+        display.resize(height, width);
+        List<AttributedString> lines = new ArrayList<>();
+        if (width < minimumWidth() || height < minimumHeight()) {
+            lines.add(new AttributedString("Resize terminal to at least " + minimumWidth() + " columns x " + minimumHeight() + " rows."));
+            lines.add(new AttributedString("Current size: " + width + " x " + height + ". Press a key to refresh."));
+            lines.add(new AttributedString("Ctrl+C quits; Escape cancels riddle input."));
+        } else {
+            lines.add(new AttributedString(TITLE, AttributedStyle.BOLD.foreground(AttributedStyle.CYAN)));
+            lines.add(new AttributedString("-".repeat(Math.min(width - 1, 78))));
+            for (String row : game.render().split("\n")) {
+                lines.add(new AttributedString(row));
+            }
+            lines.add(new AttributedString(""));
+            lines.add(new AttributedString("WASD / Arrows: Move   F: Fight   T: Riddle   Q: Quit"));
+            lines.add(new AttributedString("H: Heal   E: Equip weapon   I: Inventory   Ctrl+C: Quit"));
+            String inventory = controls.inventoryVisible()
+                    ? PlayerStatusView.inventoryText(game.player().inventory())
+                    : "Inventory hidden (I to show)";
+            addWrapped(lines, inventory, width - 1, 2);
+            lines.add(new AttributedString("-".repeat(Math.min(width - 1, 78))));
+            addWrapped(lines, controls.message(), width - 1, 3);
+            if (game.finished()) {
+                lines.add(new AttributedString("Game ended. Press any key to return to the terminal."));
+            } else if (controls.answering()) {
+                String answer = controls.answer();
+                lines.add(new AttributedString("Answer: " + answer.substring(Math.max(0, answer.length() - width + 10)) + "_"));
+                lines.add(new AttributedString("Enter: Submit   Backspace: Edit   Escape: Cancel"));
+            } else {
+                lines.add(new AttributedString("Press a control key. No Enter needed."));
+            }
         }
-        return "Thanks for playing.";
+        List<AttributedString> frame = lines.stream().limit(height - 1L)
+                .map(line -> line.columnSubSequence(0, width - 1)).toList();
+        display.update(new ArrayList<>(frame), -1);
+        terminal.flush();
+    }
+
+    /**
+     * Calculates the width needed to show this map without clipping the map or status.
+     * @author Minh
+     * @return required terminal columns, including one spare column
+     */
+    private int minimumWidth() {
+        return Math.max(70, game.render().lines().mapToInt(String::length).max().orElse(0) + 1);
+    }
+
+    /**
+     * Reserves enough rows for the current map, feedback, inventory and answer controls.
+     * @author Minh
+     * @return required terminal rows, including the unused final row
+     */
+    private int minimumHeight() {
+        return Math.max(24, (int) game.render().lines().count() + 14);
+    }
+
+    /**
+     * Appends a limited number of wrapped feedback lines.
+     *
+     * <p>Replaces embedded newlines with spaces and prefers breaking at word boundaries. When content exceeds the line limit, the final line is shortened with an ellipsis. The destination list is modified.</p>
+     *
+     * @param lines destination list receiving attributed text lines
+     * @param text non-null feedback to wrap
+     * @param width maximum line width; callers provide at least three columns for truncation
+     * @param count maximum number of lines to append
+     * @author Minh
+     */
+    private void addWrapped(List<AttributedString> lines, String text, int width, int count) {
+        String remaining = text.replace('\n', ' ');
+        for (int index = 0; index < count && !remaining.isEmpty(); index++) {
+            int end = Math.min(width, remaining.length());
+            if (end < remaining.length()) {
+                int space = remaining.lastIndexOf(' ', end);
+                if (space > 0) { end = space; }
+            }
+            String line = remaining.substring(0, end);
+            remaining = remaining.substring(end).stripLeading();
+            if (index == count - 1 && !remaining.isEmpty()) { line = line.substring(0, Math.min(line.length(), width - 3)) + "..."; }
+            lines.add(new AttributedString(line));
+        }
     }
 }
