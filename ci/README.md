@@ -14,6 +14,12 @@ permit privileged Docker-in-Docker, and share `/certs/client` between the job an
 service containers. This repository cannot configure the institution's runner.
 If that runner does not provide these capabilities, an administrator must supply
 a suitable runner/tag before the package job can succeed. Other jobs are unchanged.
+The job enables `FF_NETWORK_PER_BUILD` to use a separate bridge network and
+service DNS instead of legacy container links. This addresses the runner error
+`bad parameter: link is not supported` during environment preparation. The
+runner must not force a conflicting `network_mode`; its administrator must
+resolve that setting if this preparation error persists.
+
 The job uses TLS on port 2376, following the official GitLab setup:
 https://docs.gitlab.com/ci/docker/docker_in_docker/
 

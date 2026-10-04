@@ -37,6 +37,8 @@ docker-package:
     - name: docker:27.5.1-dind
       alias: docker
   variables:
+    # Avoid legacy container links unsupported by this runner backend.
+    FF_NETWORK_PER_BUILD: "true"
     DOCKER_HOST: tcp://docker:2376
     DOCKER_TLS_CERTDIR: "/certs"
     DOCKER_TLS_VERIFY: "1"
