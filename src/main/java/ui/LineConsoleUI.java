@@ -52,7 +52,7 @@ public class LineConsoleUI {
      */
     public void run() {
         output.println(TITLE);
-        output.println(GameEngine.OBJECTIVE_TEXT);
+        output.println(engine.execute("look"));
         output.println(GameEngine.HELP_TEXT);
         output.println();
         output.println(engine.render());

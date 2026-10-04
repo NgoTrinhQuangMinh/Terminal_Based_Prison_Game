@@ -54,25 +54,29 @@ class DifficultyLoaderTest {
         for (Difficulty difficulty : Difficulty.values()) {
             for (boolean riddle : new boolean[] {true, false}) {
                 GameEngine game = DifficultyLoader.load(difficulty);
-                var maze = game.maze();
-                route(maze, game.player().position(), maze.find('1')).forEach(game::execute);
-                if (riddle) {
-                    game.execute("talk");
-                    String answer = switch (difficulty) {
-                        case EASY -> "sun";
-                        case NORMAL -> "clock";
-                        case HARD -> "light";
-                    };
-                    assertTrue(game.execute("answer " + answer).contains("Correct!"));
-                } else {
-                    for (int turn = 0; turn < 10 && !game.player().inventory().has(Inventory.KEY)
-                            && !game.finished(); turn++) { game.execute("fight"); }
-                    assertFalse(game.finished(), "Combat must be survivable: " + difficulty);
-                }
-                assertTrue(game.player().inventory().has(Inventory.KEY));
-                route(maze, game.player().position(), maze.find('X')).forEach(game::execute);
-                assertTrue(game.won(), "Map must be escapable: " + difficulty);
-                if (riddle) { assertEquals(10, game.player().health()); }
+                assertEquals(2, game.levelCount());
+                for (int stage = 1; stage <= game.levelCount(); stage++) {
+                    var maze = game.maze();
+                    route(maze, game.player().position(), maze.find('1')).forEach(game::execute);
+                    if (riddle) {
+                        game.execute("talk");
+                        String answer = stage > 1 ? "piano" : switch (difficulty) {
+                            case EASY -> "sun";
+                            case NORMAL -> "clock";
+                            case HARD -> "light";
+                        };
+                        assertTrue(game.execute("answer " + answer).contains("Correct!"));
+                    } else {
+                        for (int turn = 0; turn < 10 && !game.player().inventory().has(Inventory.KEY)
+                                && !game.finished(); turn++) { game.execute("fight"); }
+                        assertFalse(game.finished(), "Combat must be survivable: " + difficulty);
+                    }
+                    assertTrue(game.player().inventory().has(Inventory.KEY));
+                    route(maze, game.player().position(), maze.find('X')).forEach(game::execute);
+                    assertEquals(stage == game.levelCount(), game.won(), "Victory only at the final stage: " + difficulty);
+                    assertFalse(game.player().inventory().has(Inventory.KEY), "Door consumes its key");
+                    if (riddle) { assertEquals(10, game.player().health()); }
+                    }
             }
         }
     }

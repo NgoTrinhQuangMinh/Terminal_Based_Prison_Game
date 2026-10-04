@@ -3,6 +3,8 @@ package engine;
 import java.util.List;
 
 import command.Command;
+import config.NpcLoader;
+import model.Level;
 import model.Maze;
 import model.Npc;
 import model.Player;
@@ -13,9 +15,9 @@ import ui.PlayerStatusView;
 /**
  * Holds the state of one game session and reports whether it has ended.
  *
- * <p>A session owns the maze, the player and the NPCs for a single game.
- * Game rules such as movement, combat and item use are added by other
- * features and operate on this shared state.</p>
+ * <p>A session owns the active maze, player and NPCs. Campaign sessions advance
+ * through ordered levels while retaining the same player; standalone sessions
+ * finish at their only exit. Movement, combat and item use share this state.</p>
  *
  * @author Xinran Tian
  * @author Minh
@@ -39,9 +41,11 @@ public class GameEngine {
     /** Feedback given for any command after the game has ended. */
     public static final String GAME_OVER_TEXT = "The game is over.";
 
-    private final Maze maze;
+    private Maze maze;
+    private List<Level> levels = List.of();
+    private int levelIndex;
     private final Player player;
-    private final List<Npc> npcs;
+    private List<Npc> npcs;
     private boolean won;
     private boolean quit;
 
@@ -74,6 +78,45 @@ public class GameEngine {
         this.player = new Player(maze.find(START));
         this.npcs = List.copyOf(npcs);
     }
+
+    /**
+     * Starts a forward-only campaign with independent NPC and player state.
+     * Maps are immutable definitions; NPCs are freshly loaded on entry to each map.
+     *
+     * @author Minh
+     * @param levels non-empty ordered level definitions, copied before use
+     * @return a fresh session at the first map's start
+     * @throws IllegalArgumentException if definitions or first-level NPC data are invalid
+     * @throws IllegalStateException if the first NPC resource cannot be read
+     */
+    public static GameEngine campaign(List<Level> levels) {
+        if (levels == null || levels.isEmpty() || levels.stream().anyMatch(java.util.Objects::isNull)) {
+            throw new IllegalArgumentException("At least one non-null level is required.");
+        }
+        List<Level> definitions = List.copyOf(levels);
+        Level first = definitions.get(0);
+        GameEngine game = new GameEngine(first.maze(), NpcLoader.load(first.maze(), first.npcResource()));
+        game.levels = definitions;
+        return game;
+    }
+
+    /** Returns the current stage's one-based index without changing play.
+     * @author Minh
+     * @return current stage number
+     */
+    public int levelNumber() { return levelIndex + 1; }
+
+    /** Counts stages, including the current stage, in this session's definition.
+     * @author Minh
+     * @return total stage count; one for a standalone maze
+     */
+    public int levelCount() { return levels.isEmpty() ? 1 : levels.size(); }
+
+    /** Returns the active stage's display name.
+     * @author Minh
+     * @return configured stage name, or Maze for a standalone session
+     */
+    public String levelName() { return levels.isEmpty() ? "Maze" : levels.get(levelIndex).name(); }
 
     /**
      * Returns the maze used by this session.
@@ -162,7 +205,8 @@ public class GameEngine {
             case USE -> player.use(argument);
             case INVENTORY -> PlayerStatusView.inventoryText(player.inventory());
             case HELP -> HELP_TEXT;
-            case LOOK -> OBJECTIVE_TEXT;
+            case LOOK -> levels.isEmpty() ? OBJECTIVE_TEXT
+                    : "Find a key and unlock the exit in each level. Each door consumes one key. Escape the final level to win.";
             case QUIT -> {
                 quit();
                 yield "You give up on escaping. Goodbye.";
@@ -177,12 +221,14 @@ public class GameEngine {
      * <p>The command is converted into a coordinate offset and the
      * destination is checked by the maze before the player's position
      * is updated. Invalid or unsupported commands do not change the
-     * player's position.</p>
+     * player's position. Finished sessions reject further movement.</p>
      *
      * @param command movement command to execute; may be null
      * @return feedback describing the result of the movement attempt
+     * @author Minh
      */
     public String move(Command command) {
+        if (finished()) { return GAME_OVER_TEXT; }
         if (command == null || command == Command.UNKNOWN) {
             return "Unknown movement command.";
         }
@@ -221,9 +267,7 @@ public class GameEngine {
                 return "The exit is locked. You need the key.";
             }
 
-            player.moveTo(destination);
-            markWon();
-            return "You escaped!";
+            return enterExit(destination);
         }
 
         player.moveTo(destination);
@@ -236,6 +280,40 @@ public class GameEngine {
         }
 
         return "Movement successful.";
+    }
+
+    /**
+     * Unlocks the current exit and enters the next map, or wins at the final exit.
+     * Loads destination NPCs before changing live state, so a configuration failure
+     * preserves the current map, position and inventory. Campaign doors consume one
+     * key; health, equipment and all other items stay with the same player.
+     * Standalone maze sessions preserve their existing key behaviour.
+     *
+     * @author Minh
+     * @param exit validated exit position with key ownership already checked
+     * @return transition, loading-failure or victory feedback
+     */
+    private String enterExit(Position exit) {
+        if (levelNumber() == levelCount()) {
+            if (!levels.isEmpty()) { player.inventory().remove(Inventory.KEY); }
+            player.moveTo(exit);
+            markWon();
+            return "You escaped!";
+        }
+        Level next = levels.get(levelIndex + 1);
+        List<Npc> encounters;
+        try {
+            encounters = NpcLoader.load(next.maze(), next.npcResource());
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return "Could not enter the next level: " + exception.getMessage();
+        }
+        player.inventory().remove(Inventory.KEY);
+        maze = next.maze();
+        npcs = List.copyOf(encounters);
+        levelIndex++;
+        player.moveTo(maze.find(START));
+        return "Entered level " + levelNumber() + "/" + levelCount() + ": " + levelName()
+                + ". Find its exit key.";
     }
 
     /**
@@ -351,9 +429,14 @@ public class GameEngine {
      *
      * @author Lia Huang
      * @return the current map, legend and player status
+     * @author Minh
      */
     public String render() {
         StringBuilder output = new StringBuilder();
+        if (!levels.isEmpty()) {
+            output.append("Level ").append(levelNumber()).append('/').append(levelCount())
+                    .append(": ").append(levelName()).append('\n');
+        }
 
         for (int y = 0; y < maze.height(); y++) {
             for (int x = 0; x < maze.width(); x++) {

@@ -24,7 +24,6 @@ public final class DifficultyLoader {
      */
     public static GameEngine load(Difficulty difficulty) {
         if (difficulty == null) { throw new IllegalArgumentException("Choose a difficulty first."); }
-        var maze = MazeLoader.load(difficulty.mazeResource());
-        return new GameEngine(maze, NpcLoader.load(maze, difficulty.npcResource()));
+        return GameEngine.campaign(CampaignLoader.load(difficulty.campaignResource()));
     }
 }
