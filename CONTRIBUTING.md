@@ -6,7 +6,7 @@ The goal is to keep development consistent, traceable, and easy for every team m
 
 ---
 
-# 2. Responsibility of Each Package
+# 1. Responsibility of Each Package
 
 ## `engine`
 
@@ -14,59 +14,42 @@ Contains the central game logic.
 
 ### `GameEngine`
 
-Controls what the game does.
+Coordinates game actions and holds references to the maze, player, NPCs, and session status.
 
 Examples:
 
 - moving the player,
-- attacking an enemy,
-- picking up an item,
+- handling NPC encounters,
 - processing commands,
-- checking win/loss conditions.
+- checking session status.
 
 `GameEngine` should coordinate other classes rather than contain all game data itself.
-
-### `GameState`
-
-Stores the current state of the game.
-
-Examples:
-
-- current player,
-- current map,
-- player location,
-- enemy states,
-- item states,
-- game-over state.
 
 Conceptually:
 
 ```text
-Command
+ConsoleUI
+   ↓
+GameControls
    ↓
 GameEngine
    ↓
-changes
-   ↓
-GameState
+Player / Npc / Maze / Position
 ```
 
 ---
 
 ## `model`
 
-Contains classes representing things that exist in the game.
+Contains classes representing the main game data and state.
 
 Examples:
 
 ```text
 Player
-Room
-GameMap
-Enemy
-NPC
-Item
-Inventory
+Npc
+Maze
+Position
 ```
 
 These classes should mainly represent data and behaviour related to the object they model.
@@ -75,16 +58,16 @@ These classes should mainly represent data and behaviour related to the object t
 
 ## `command`
 
-Contains user actions.
+Contains supported actions and command parsing.
 
 Examples:
 
 ```text
 move
-attack
-pickup
-use
+fight
 talk
+answer
+use
 inventory
 quit
 ```
@@ -100,11 +83,11 @@ Contains configuration-loading logic.
 For example:
 
 ```text
-game.json
-      ↓
-GameConfigLoader
-      ↓
-GameMap / Player / Items / Enemies
+maze.properties / npcs.properties
+            ↓
+MazeLoader / NpcLoader
+            ↓
+Maze / Npc
 ```
 
 Game content should be configurable where practical rather than hard-coded directly into Java.
@@ -118,16 +101,16 @@ Handles interaction with the human player.
 For example:
 
 ```text
-InputHandler
+GameControls
 ```
 
-reads terminal input.
+translates keyboard input into commands and manages input-related UI state.
 
 ```text
-TerminalRenderer
+ConsoleUI
 ```
 
-prints rooms, maps, messages, combat results, and inventory information.
+manages terminal interaction and displays the game.
 
 The UI should not contain important game logic.
 
@@ -160,19 +143,17 @@ Contains configuration and data files.
 Example:
 
 ```text
-src/main/resources/game.json
+src/main/resources/maze.properties
+src/main/resources/npcs.properties
 ```
 
 Possible configurable content includes:
 
-- rooms,
-- room connections,
-- enemies,
+- maze layout,
 - NPCs,
-- items,
-- dialogue,
-- starting position,
-- win conditions.
+- combat values,
+- riddles and answers,
+- drops.
 
 ---
 
@@ -191,7 +172,7 @@ src/test/java/engine/GameEngineTest.java
 
 ---
 
-# 3. General Development Rule
+# 2. General Development Rule
 
 Do not make normal feature changes directly on `main`.
 
@@ -223,7 +204,7 @@ Close Issue
 
 ---
 
-# 4. Work Items and Issues
+# 3. Work Items and Issues
 
 GitLab Work Items are used to track project work.
 
@@ -244,7 +225,7 @@ Do not create separate issues for extremely small changes that are naturally par
 
 ---
 
-# 5. Raising a New Idea
+# 4. Raising a New Idea
 
 If you have an idea that has not yet been agreed on by the team, create an issue first.
 
@@ -295,7 +276,7 @@ Important decisions should not exist only in private messages.
 
 ---
 
-# 6. Raising a Development Issue
+# 5. Raising a Development Issue
 
 Every development issue should explain exactly what needs to be completed.
 
@@ -352,7 +333,7 @@ Better:
 
 ---
 
-# 7. Issue Roles
+# 6. Issue Roles
 
 Each issue should have an **implementer** and a **verifier**.
 
@@ -391,7 +372,7 @@ For small tasks, the reviewer and verifier may be the same person.
 
 ---
 
-# 8. Issue Board
+# 7. Issue Board
 
 Use the Issue Board to show the current state of work.
 
@@ -426,7 +407,7 @@ A closed issue represents **Done**.
 
 ---
 
-# 9. Meaning of Board States
+# 8. Meaning of Board States
 
 ## Backlog
 
@@ -513,7 +494,7 @@ Do not leave blocked work silently in `In Progress`.
 
 ---
 
-# 10. Labels
+# 9. Labels
 
 Use labels to make issues easy to understand and filter.
 
@@ -532,7 +513,6 @@ type::idea
 
 ```text
 component::engine
-component::state
 component::map
 component::player
 component::inventory
@@ -566,7 +546,7 @@ low       → optional improvement / polish
 
 ---
 
-# 11. Milestones
+# 10. Milestones
 
 Milestones group related issues into a larger stage of the project.
 
@@ -589,7 +569,7 @@ If an issue must move to another milestone, leave a short explanation in the iss
 
 ---
 
-# 12. Branches
+# 11. Branches
 
 Create branches from the latest `main`.
 
@@ -601,6 +581,7 @@ bugfix/<issue-number>-<description>
 test/<issue-number>-<description>
 refactor/<issue-number>-<description>
 infra/<issue-number>-<description>
+docs/<issue-number>-<description>
 ```
 
 Examples:
@@ -629,7 +610,7 @@ A branch should normally correspond to one issue.
 
 ---
 
-# 13. Commits
+# 12. Commits
 
 Commits should be small enough that another developer can understand what changed.
 
@@ -650,7 +631,7 @@ fix(map): prevent movement through missing exit (#41)
 
 test(engine): add invalid movement tests (#52)
 
-ci: run Maven tests in pipeline (#60)
+ci: run Gradle tests in pipeline (#60)
 ```
 
 Suggested commit types:
@@ -681,7 +662,7 @@ Do not wait until an entire feature is complete before creating one very large c
 
 ---
 
-# 14. Merge Requests
+# 13. Merge Requests
 
 All normal development branches should be merged into `main` using a Merge Request.
 
@@ -732,7 +713,7 @@ links the MR to the issue and allows GitLab to close the issue after the MR is m
 
 ---
 
-# 15. Code Review
+# 14. Code Review
 
 The implementer should not merge their own work without another member checking it.
 
@@ -777,7 +758,7 @@ Do not open a new MR simply because review changes were requested.
 
 ---
 
-# 16. Verification
+# 15. Verification
 
 Review and verification are related but different.
 
@@ -837,7 +818,7 @@ status::in-progress
 
 ---
 
-# 17. CI/CD
+# 16. CI/CD
 
 The GitLab pipeline should automatically check the project.
 
@@ -872,7 +853,7 @@ Do not modify a correct test simply to make the pipeline pass.
 ---
 
 
-# 19. Discussions and Decisions
+# 17. Discussions and Decisions
 
 Discussion about an issue should happen in the issue when possible.
 
@@ -905,18 +886,18 @@ Example:
 ```text
 Decision:
 
-Room connections will be stored using room IDs in game.json.
+NPC configuration will be loaded from `npcs.properties`.
 
 Reason:
 
-This keeps the JSON configuration simple and prevents circular objects.
+This keeps NPC configuration separate from the Java implementation.
 ```
 
 This allows someone who was not part of the original conversation to understand why the decision was made.
 
 ---
 
-# 24. Example Workflow
+# 18. Example Workflow
 
 Suppose the team wants to implement inventory.
 
@@ -1012,7 +993,7 @@ Issue #35 → Closed / Done
 
 ---
 
-# 25. Main Principle
+# 19. Main Principle
 
 The repository should make it possible to understand:
 
