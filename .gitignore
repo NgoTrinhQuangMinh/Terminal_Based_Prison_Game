@@ -42,3 +42,6 @@ bin/
 .DS_Store
 
 .idea
+
+# Container smoke-test logs
+package-logs/
